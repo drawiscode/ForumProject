@@ -1,0 +1,39 @@
+# Node
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Build outputs
+**/dist/
+**/dist-ssr/
+**/.vite/
+**/.cache/
+
+# Env files (敏感信息：数据库密码/密钥)
+**/.env
+**/.env.*
+!.env.example
+
+# Logs
+**/logs/
+**/*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Uploads / runtime generated files (你的头像上传目录等)
+server/uploads/
+uploads/
+
+# Optional: coverage
+**/coverage/
