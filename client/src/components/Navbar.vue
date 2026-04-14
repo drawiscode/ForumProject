@@ -49,59 +49,66 @@
     }
   }
 </script>
-
 <style scoped>
-
 .nav{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap: 12px;
   margin: 14px auto 0;
-  width:50%;
-  padding: 14px 16px;
+  width: min(920px, 92%);
+  padding: 12px 16px;
 
-  background: rgba(140, 135, 135, 0.5); /* 半透明底色 */
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border-radius: 120px;
+  /* ✅ 深色毛玻璃，适配星空 */
+  background: rgba(10, 12, 24, 0.55);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 
+  /* ✅ 关键：让 UserPanel 弹层不被裁剪 & 保证在 canvas 之上 */
+  position: relative;
+  z-index: 50;
+  overflow: visible;
 }
 
+.links{ display:flex; gap: 14px; flex-wrap: wrap; align-items: center; }
 
-.link-home {
-  color:rgb(39, 33, 21); 
-  font-weight: 500;
-  font-size: 18px;
-}
-.link-publish {
-  color:rgb(22, 57, 47); 
-  font-weight: 500;
-  font-size: 18px;
-}
-.link-login {
-  color:rgb(61, 26, 26); 
-  font-weight: 500;
-  font-size: 18px;
-}
-.link-register {
-  color:rgb(36, 19, 56);
-  font-weight: 500;
-  font-size: 18px;
-}
-
-.brand{ 
-  color: rgb(41, 37, 39);
-  font-weight: 800; 
-  letter-spacing: .8px; 
+.brand{
+  font-weight: 900;
+  letter-spacing: .8px;
   font-size: 20px;
+  background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.links{ display:flex; gap: 12px; flex-wrap: wrap; }
+.link-home,
+.link-publish,
+.link-login,
+.link-register{
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 650;
+  font-size: 16px;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: all .2s ease;
+}
+.link-home:hover,
+.link-publish:hover,
+.link-login:hover,
+.link-register:hover{
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255,255,255,0.14);
+}
 
 .right{
   display: flex;
   align-items: center;
+  position: relative;
+  z-index: 60;
 }
-
 </style>

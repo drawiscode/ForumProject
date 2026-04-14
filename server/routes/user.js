@@ -52,6 +52,61 @@ const upload = multer({
 })
 
 
+router.get('/:id/public', async (req, res) => {
+  try{
+    const id = Number(req.params.id)
+    if(!id) return res.status(400).json({ ok: false, message: 'invalid user id' })
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, username, avatar_url, gender, bio, created_at
+      FROM users
+      WHERE id = ? AND (public_profile = 1 OR public_profile IS NULL)
+      LIMIT 1
+      `,
+      [id]
+    )
+    if(rows.length === 0) return res.status(404).json({ ok: false, message: 'user not found or profile is private' })
+
+    const [cnt] =await pool.query(
+      'SELECT COUNT(*) AS posts_count FROM posts WHERE user_id = ? AND deleted_at IS NULL',
+      [id]
+    )
+    res.json({ ok: true, user: {...rows[0], posts_count: cnt[0]?.posts_count || 0 } })
+  }catch(err){
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+// GET /api/user/active?limit=5
+router.get('/active', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 5, 20)
+
+    const [rows] = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.username,
+        u.avatar_url,
+        COUNT(p.id) AS posts_count
+      FROM users u
+      LEFT JOIN posts p
+        ON p.user_id = u.id AND p.deleted_at IS NULL
+      WHERE u.public_profile = 1 OR u.public_profile IS NULL
+      GROUP BY u.id, u.username, u.avatar_url
+      ORDER BY posts_count DESC, u.id DESC
+      LIMIT ?
+      `,
+      [limit]
+    )
+
+    res.json({ ok: true, users: rows, limit })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
 // GET /api/user/me 需要返回 avatar_url
 router.get('/me', requireAuth, async (req, res) => {
   try {
@@ -109,7 +164,7 @@ router.post('/me/password', requireAuth, async (req, res) => {
     }finally{
       conn.release()
     }
-  })
+})
 
 // POST /api/user/me/profile（保存 username / gender / bio）
 router.post('/me/profile', requireAuth, async (req, res) => {
@@ -249,7 +304,6 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ ok: false, message: err.message })
   }
 })
-
 
 // POST /api/user/me/privacy（保存隐私设置）
 router.post('/me/privacy', requireAuth, async (req, res) => {

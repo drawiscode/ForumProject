@@ -83,87 +83,81 @@ export default {
 }
 
 </script>
-
 <style scoped>
+.card{
+  width: min(900px, 96%);
+  margin: 18px auto 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 16px;
+  border-radius: 20px;
 
-    .card{ 
-        width: 60%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 
-        display: flex; 
-        flex-direction: column; 
-        padding: 12px; 
-        border-radius: 15px; 
-        background: rgba(165, 165, 165, 0.25); 
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+}
 
-        font-style:italic;
-    }
+.fatie{
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-    .fatie{
-        font-size: 24px; 
-        font-weight: bold; 
-        color:rgb(82, 82, 82);
-        margin-bottom: 12px;
-    }
+.title{
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: rgba(255,255,255,0.85);
+}
 
-    .title{
-        font-size: 18px; 
-        font-weight: 500; 
-        color:rgb(82, 82, 82);
+.form{ display:flex; flex-direction: column; gap: 14px; margin-bottom: 12px; }
 
-        margin-bottom: 10px;
-    }
+.label{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-    .form{ 
-        display: flex; 
-        flex-direction: column;
-        margin-bottom: 12px;
-    }
+.input,
+.input_ta{
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.92);
+  border-radius: 14px;
+  padding: 10px 12px;
+  outline: none;
+}
 
+.input{ width: 280px; max-width: 100%; min-height: 40px; }
+.input_ta{ width: 100%; min-height: 260px; resize: vertical; }
 
-    .label{ 
-        display:; 
-        gap: 6px; 
-    }
+.input::placeholder,
+.input_ta::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 500;
+  opacity: 1;
+}
 
-    .input{ 
-        width:20%;
-        min-height: 32px;
+.btn{
+  width: 160px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+  box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+}
 
-        margin-bottom: 25px;
-        border-radius: 12px;
-    }
-
-    .input_ta{ 
-        min-height: 250px; 
-        resize: vertical; 
-        width:70%;
-
-        margin-bottom: 25px;
-        border-radius: 12px;
-    }
-
-    .input::placeholder,
-    .input_ta::placeholder {
-    color: rgba(55, 55, 55, 0.9); 
-    font-size: 13px;      
-    font-style: italic;
-    font-weight: 500;
-
-    opacity: 1;          
-    }
-
-    .btn{
-        width: 20%;
-
-        padding: 10px 16px; 
-        border-radius: 2px; 
-
-        font-size: 16px; 
-        font-weight: 400; 
-        font-style: italic;
-        border-radius: 12px;
-    }
-
-    .error{ margin:0; color:#ff9dbf; }
-    .ok{ margin:0; color:#b8ffcf; }
+.error{ margin:0; color:#ff9dbf; }
+.ok{ margin:0; color:#b8ffcf; }
 </style>

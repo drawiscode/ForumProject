@@ -30,18 +30,33 @@
     <section class="right">
       <div class="block">
         <div class="title">热门帖子</div>
-        <div v-for="i in 5" :key="i" class="hotitems">
-          <div class="hottitle">{{ i }}</div>
-          <p>这是热门帖子 {{ i }} 的内容摘要.</p>
+
+        <div v-if="hotPostsLoading">加载中...</div>
+        <div v-else-if="hotPostsError" class="err">{{ hotPostsError }}</div>
+        
+        <div v-else>
+          <div v-for="p in hotPosts" :key="p.id" class="hotitem card" @click="goPost(p.id)">
+            <div class="hottitle">{{ p.title }}</div>
+            <div class="hotmeta">👍 {{ p.likes_count }} · 💬 {{ p.replies_count }}</div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <div class="block">
-          <div class="title">活跃用户</div>
-          <div v-for="i in 5" :key="i" class="hotusers">
-            <div class="hottitle">{{ i }}</div>
-            <p>这是活跃用户 {{ i }} 的简介.</p>
+      <div class="block">
+        <div class="title">活跃用户</div>
+
+        <div v-if="activeUsersLoading">加载中...</div>
+        <div v-else-if="activeUsersError" class="err">{{activeUsersError}}</div>
+        <div v-else>
+
+          <div v-for="u in activeUsers" :key="u.id" class="hotuser" @click="goUser(u.id)">
+            <img v-if="u.avatar_url" class="avatar" :src="u.avatar_url" alt="avatar" />
+            <div v-else class="avatar-placeholder"></div>
+
+            <div class="uinfo">
+              <div class="uname">{{ u.username }}</div>
+              <div class="umeta">发帖数:{{u.posts_count}}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -57,10 +72,20 @@
       return {
         posts: [],
         postsLoading: false,
+
+        hotPosts: [],
+        hotPostsLoading: false,
+        hotPostsError: '',
+
+        activeUsers: [],
+        activeUsersLoading: false,
+        activeUsersError: ''
       }
     },
     mounted(){
       this.fetchPosts()
+      this.fetchHotPosts()
+      this.fetchActiveUsers()
     },
 
     methods:{
@@ -76,80 +101,148 @@
           this.postsLoading = false
         }
       },
+      async fetchHotPosts(){
+        this.hotPostsLoading = true
+        this.hotPostsError = ''
+        try{
+          const data = await apiFetch('/api/post/hot?limit=5')
+          this.hotPosts = data.posts || []
+        }catch(err){
+          this.hotPostsError = err.message || '加载热门帖子失败'
+          this.hotPosts = []
+          console.error('加载热门帖子失败', err)
+        }finally{
+          this.hotPostsLoading = false
+        }
+      },
+      async fetchActiveUsers(){
+        this.activeUsersLoading = true
+        this.activeUsersError = ''
+        try{
+          const data = await apiFetch('/api/user/active?limit=5')
+          this.activeUsers = data.users || []
+        }catch(err){
+          this.activeUsersError = err.message || '加载活跃用户失败'
+          this.activeUsers = []
+          console.error('加载活跃用户失败', err)
+        }finally{
+          this.activeUsersLoading = false
+        }
+      },
       onCatClick(name){
         if(name === '全部') return this.$router.push('/')
         this.$router.push(`/board/${encodeURIComponent(name)}`)
       },
       goPost(id){
         this.$router.push(`/post/${id}`)
+      },
+      goUser(id){
+        this.$router.push(`/user/${id}`)  
       }
     }
   }
 </script>
-
 <style scoped>
-  .card{
-    
-    cursor: pointer;
-  }
-  .title{
-    font-size: 1.2em;
-    font-weight: bold;
-    margin-bottom: 12px;
-    color: rgb(142, 53, 145);
-  }
-  .block{
-    display:flex;
-    flex-direction: column;
-    border-radius: 16px;
-    margin: 18px 14px 18px 14px;
-    padding: 18px 14px 18px 14px;
+.card { cursor: pointer; }
 
-    background-color: rgb(255, 255, 255);
-  }
-  .block1{
-    margin-right: 20px;
-  }
-  .block-with-bg1{
-    background-image: url("../assets/bg1.jpg");
-    background-size: cover;
-    background-position: center;
-  }
-  .block-with-bg2{
-    background-image: url();
-    background-size: cover;
-    background-position: center;
-  }
-  .cats {
-    display: flex;
-    flex-direction: column;
-  }
-  .cat {
-    display: flex;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    padding: 0.5em;
-    border: none;
-    background-color: rgb(246, 226, 244);
-    border-radius: 8px;
-    cursor: pointer;
-  }
+/* 页面布局容器：透明，让 App 的渐变星空透出来 */
+.content {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 18px;
+  position: relative;
+  z-index: 1;
+  background: transparent; /* ✅ 不要盖住 app 背景 */
+  border-radius: 0;
+}
 
-  .content {
-    display: flex;
-    background-color:rgb(235, 232, 232);
-    border-radius: 16px;
-  }
+/* 统一毛玻璃块 */
+.block {
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  padding: 18px 16px;
 
-  .left{
-    flex: 1;
-  }
-  .center{
-    flex: 2;
-  }
-  .right{
-    flex: 1;
-  }
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* left */
+.cats { display: flex; flex-direction: column; }
+.cat {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.25s ease;
+}
+.cat:hover {
+  background: rgba(255, 154, 158, 0.15);
+  transform: translateX(4px);
+}
+
+/* right */
+.hotitem,
+.hotuser {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.hotitem:hover,
+.hotuser:hover {
+  background: rgba(255, 154, 158, 0.15);
+  transform: translateY(-2px);
+}
+
+.hottitle { font-weight: 700; color: rgba(255,255,255,0.92); }
+.hotmeta { font-size: 12px; opacity: 0.75; margin-top: 4px; color: rgba(255,255,255,0.75); }
+
+.hotuser { display: flex; gap: 10px; align-items: center; }
+
+.avatar,
+.avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+}
+.avatar { object-fit: cover; border: 2px solid rgba(255,255,255,0.35); }
+.avatar-placeholder { background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.18); }
+
+.uname { font-weight: 700; color: rgba(255,255,255,0.92); }
+.umeta { font-size: 12px; opacity: 0.75; color: rgba(255,255,255,0.75); }
+
+.err { color: #ff7878; }
+
+.left, .center, .right { min-width: 0; }
+
+@media (max-width: 900px) {
+  .content { grid-template-columns: 1fr; }
+}
 </style>

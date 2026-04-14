@@ -1,11 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const Home = () => import('../views/Home.vue')
+
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
 const PostDetail = () => import('../views/PostDetail.vue')
 const Publish = () => import('../views/Publish.vue')
+
 const Profile =() => import('../views/Profile.vue')
+const UserProfile = () => import('../views/UserProfile.vue')
+
 const MyPosts = () => import('../views/MyPosts.vue')
 const Settings = () => import('../views/Settings.vue')
 
@@ -22,6 +26,7 @@ const routes =
   { path: '/post/:id', name: 'PostDetail', component: PostDetail },
 
   {path: '/profile', name: 'Profile', component: Profile,meta:{ requiresAuth: true }},
+  {path: '/user/:id', name: 'UserProfile', component: UserProfile},
   {path: '/publish', name: 'Publish', component: Publish,meta:{ requiresAuth: true }},
 
   { path: '/my-posts', name: 'MyPosts', component: MyPosts, meta: { requiresAuth: true } },

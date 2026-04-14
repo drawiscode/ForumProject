@@ -74,114 +74,89 @@ export default {
   }
 }
 </script>
-
 <style scoped>
+.page{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 70vh;
+  padding: 20px 12px;
+  position: relative;
+  z-index: 1;
+}
 
-  .page{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    min-height: 60vh;
-    padding: 20px 12px;
-    position: relative;
-    overflow: hidden;
-  }
+/* ✅ 关闭自带背景图，否则会挡住 App 樱花背景 */
+.bg{ display: none; }
 
-  .bg{
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    background-image: url("../assets/bg1.jpg");
-    background-size: cover;
-    background-position: center;
+.welcome{
+  font-size: 26px;
+  font-weight: 800;
+  font-style: italic;
+  background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
 
-  }
+.input{
+  width: 90%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.92);
+  font-size: 18px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-style: italic;
+  outline: none;
+}
 
-  .welcome{
-    font-size: 28px;
-    font-weight: 700;
-    font-style: italic;
+.actions{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 20px;
+}
 
-    color: rgb(221, 218, 218);
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
+.btn{
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-style: italic;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 154, 158, 0.35);
+}
 
-  .input{
-    width: 80%;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 8px;
-    background: rgba(137, 73, 73, 0.1);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-    font-size: 20px;
-    margin-top: 12px;
-    margin-bottom: 6px;
+.link{
+  font-size: 14px;
+  font-weight: 600;
+  font-style: italic;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+}
 
-    font-style: italic;
-  }
+.card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(420px, 92%);
+  padding: 22px 18px;
 
-  .actions{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-top: 20px;
-  }
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 24px;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.35);
+}
 
-  .btn{
-    padding: 10px 16px;
-    border: none;
-    border-radius: 8px;
-
-    background-color: rgb(118, 118, 118);
-    color: rgb(36, 33, 33);
-
-    font-size: 16px;
-    font-weight: 500;
-    font-style: italic;
-
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-
-  .link{
-    font-size: 16px;
-    font-weight: 500;
-    font-style: italic;
-
-    color: rgb(36, 33, 33);
-    text-decoration: none;
-  }
-
-  .card{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 80%;
-    max-width: 420px;
-    padding: 24px;
-    background: rgba(144, 144, 144, 0.8);
-    border-radius: 40px;
-
-    backdrop-filter: blur(1px);
-  }
-
-  .label{
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .error{
-    color: #b00020;
-    margin-top: 8px;
-  }
-
-  .ok{
-    color: #064e3b;
-    margin-top: 8px;
-  }
-
+.error{ color: #ff9dbf; margin-top: 8px; }
+.ok{ color: #b8ffcf; margin-top: 8px; }
 </style>

@@ -37,3 +37,5 @@ uploads/
 
 # Optional: coverage
 **/coverage/
+
+.VSCodeCounter

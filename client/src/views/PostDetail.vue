@@ -105,7 +105,27 @@
         </section>
 
         <section class ="right">
+            <div class ="sidecard">
+                <div class="sidetitle">相关主题</div>
 
+                <div v-if="relatedLoading" class="muted">加载中...</div>
+                <div v-else-if="relatedError" class="err">{{ relatedError }}</div>
+                <div v-else-if="relatedPosts.length === 0" class="muted">暂无相关推荐</div>
+
+                <div v-else class="related-list">
+                    <div v-for="p in relatedPosts" :key="p.id" class="related-item" @click="goRelated(p.id)" title="点击查看">
+                        <div class="r-title">{{ p.title }}</div>
+
+                        <div class="r-meta">
+                            <span>{{ p.author }}</span>
+                            <span>·</span>
+                            <span>👍 {{ p.likes_count }}</span>
+                            <span>·</span>
+                            <span>💬 {{ p.replies_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 </template>
@@ -131,6 +151,10 @@
                 likingPost: false,
 
                 replyTarget: null,    // {id,author} | null
+
+                relatedPosts: [],
+                relatedLoading: false,
+                relatedError: ''
             }
         },
         computed: {
@@ -161,12 +185,31 @@
                 try{
                     const post_data = await apiFetch(`/api/post/${this.id}`)
                     this.post = post_data.post
-                    await this.loadComments()
+                     await Promise.all([
+                        this.loadComments(),
+                        this.loadRelated()
+                    ])
                 }catch(e){
                     this.error = e.message || '加载帖子失败'
                 }finally{
                     this.loading = false
                 }
+            },
+            async loadRelated() {
+                this.relatedLoading = true
+                this.relatedError = ''
+                this.relatedPosts = []
+                try{
+                    const data = await apiFetch(`/api/post/${this.id}/related?limit=6`)
+                    this.relatedPosts = data.posts || []
+                }catch(e){
+                    this.relatedError = e.message || '加载相关帖子失败'
+                }finally{
+                    this.relatedLoading = false
+                }
+            },
+            goRelated(postId) {
+                this.$router.push(`/post/${postId}`)
             },
             async loadComments() {
                 this.commentsLoading = true
@@ -205,14 +248,6 @@
                 }finally{
                     this.likeingPost = false
                 }
-            },
-            startReply(comment){
-                this.replyTarget = { id:c.id,author:c.author }
-                this.mycomment = '@${c.author} '
-                this.$nextTick(() => {
-                    const el = this.$refs.commentInput
-                    if(el && el.focus) el.focus()
-                })
             },
             startReply(c) {  // ✅ 点“回复”按钮：进入回复模式，记录目标评论 id/作者
                 this.replyTarget = { id: c.id, author: c.author }
@@ -276,94 +311,231 @@
 
 <style scoped>
 
-    .replying {
-        margin-bottom: 10px;
-        padding: 10px 12px;
-        border-radius: 14px;
-        background: rgba(0, 0, 0, 0.06);
-    }
-    .link {
-        border: 0;
-        background: transparent;
-        cursor: pointer;
-        color: #0b57d0;
-        padding: 0 6px;
-    }
-    .btn {
-        background-color:rgb(205, 205, 205);
-        color: white;
-        padding: 10px 20px;
-        width: 100px;
-        border-radius: 20px;
-        margin: 0 0 20px 0;
-        cursor: pointer;
-    }
-    .comments {
-        display: flex;
-        flex-direction: column;
-        margin-top: 20px;
-    }
-    .post-comment {
-        background-color: #c0c0c0;
-        padding: 15px;
-        height: 30vh;
-        width: 50%;
-        border-radius: 26px;
-        margin: 0 300px 20px 0;
-        
-    }
-
-    .comment {
-        background-color: #d0d0d0;
-        padding: 15px;
-        border-radius: 26px;
-        margin-bottom: 10px;
-    }
-
-    .personal-info {
-        background-color: #d0d0d0;
-        padding: 15px;
-        border-radius: 26px;
-        margin-bottom: 20px;
-    }
-    .post-content {
-        background-color: #c0c0c0;
-        height: 50vh;
-        border-radius: 20px;
-        padding: 15px 15px 15px 15px;
-    }
-    .post-info {
-        background-color: #d0d0d0;
-        padding: 15px;
-        border-radius: 26px;
-        margin: 20px 0 20px 0;
-    }
-
+    /* 全局背景 + 樱花画布 */
     .content {
-        display: flex;
-        gap: 20px;
-      
+    width: 100%;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    gap: 2%;
     }
 
+
+    /* 左右双栏布局 */
+    .content {
+    display: grid;
+    grid-template-columns: 70% 28%;
+    }
     .left {
-        display: flex;
-        flex-direction: column;
-
-        flex: 3;
-        background-color: #f0f0f0;
-        padding: 20px;
-        border-radius: 26px;
-        margin: 0 100px 0 150px;
-
-         /* 左侧内容区，宽度较大 */
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    position: relative;
+    z-index: 1;
     }
     .right {
-        flex: 1;
-        background-color: #e0e0e0;
-        padding: 20px;
-        border-radius: 26px;
-        height: 50%;
-         /* 固定高度，允许内部滚动 */
+    position: relative;
+    z-index: 1;
     }
 
+    /* 帖子主体卡片 毛玻璃二次元 */
+    .post {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.3s ease;
+    }
+    .post:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(255, 154, 158, 0.2);
+    }
+
+    /* 作者信息 */
+    .personal-info {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fbc2eb;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* 帖子标题+内容 */
+    .post-content {
+    margin-bottom: 25px;
+    line-height: 1.8;
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.95);
+    }
+    .post_title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    }
+
+    /* 帖子底部信息 */
+    .post-info {
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    }
+    .stats {
+    display: flex;
+    gap: 25px;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* 通用按钮 二次元渐变霓虹 */
+    .btn {
+    padding: 10px 25px;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    border: none;
+    border-radius: 25px;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+    }
+    .btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 154, 158, 0.6);
+    }
+    .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    }
+
+    /* 评论区域卡片 */
+    .comments {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* 回复提示条 */
+    .replying {
+    background: rgba(255, 154, 158, 0.2);
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    }
+    .link {
+    color: #ffc2d1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    }
+
+    /* 评论输入框 */
+    .post-comment {
+    width: 100%;
+    min-height: 120px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 15px;
+    color: #fff;
+    font-size: 15px;
+    resize: vertical;
+    outline: none;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+    }
+    .post-comment:focus {
+    border-color: #ff9a9e;
+    box-shadow: 0 0 15px rgba(255, 154, 158, 0.3);
+    }
+
+    /* 单条评论 */
+    .comment {
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    }
+    .comment-author {
+    font-weight: 600;
+    color: #fbc2eb;
+    margin-bottom: 8px;
+    }
+    .comment-content {
+    line-height: 1.7;
+    margin-bottom: 10px;
+    }
+    .comment-info {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    }
+
+    /* 右侧侧边栏卡片 */
+    .sidecard {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .sidetitle {
+    font-size: 20px;
+    margin-bottom: 20px;
+    background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    }
+
+    /* 相关帖子列表 */
+    .related-item {
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    }
+    .related-item:hover {
+    background: rgba(255, 154, 158, 0.15);
+    transform: translateX(5px);
+    }
+    .r-title {
+    margin-bottom: 6px;
+    font-weight: 500;
+    }
+    .r-meta {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    gap: 6px;
+    }
+
+    .muted {
+    color: rgba(255, 255, 255, 0.5);
+    }
+    .err{
+        color: #ff7878
+    }
+    /*响应式适配手机*/
+    @media (max-width: 768px) {
+    .content {
+        grid-template-columns: 100%;
+    }
+    }
 </style>

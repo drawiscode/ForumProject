@@ -46,17 +46,39 @@ export default {
 }
 
 </script>
-
 <style scoped>
-.error{ color: #ff9dbf; }
-.box{ display:grid; gap: 6px; }
-.avatar{ margin-top: 14px; display:flex; align-items:center; gap: 12px; }
+.card {
+  width: min(760px, 96%);
+  margin: 18px auto 0;
+  padding: 18px 16px;
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  color: rgba(255, 255, 255, 0.9);
+}
+
+h2 {
+  margin-bottom: 12px;
+  background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.error { color: #ff9dbf; }
+.box { display: grid; gap: 6px; }
+
+.avatar { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
 .circle{
   width: 56px; height: 56px; border-radius: 999px;
   display:flex; align-items:center; justify-content:center;
-  background: linear-gradient(90deg, rgba(255,107,203,0.9), rgba(122,92,255,0.9));
+  background: linear-gradient(45deg, rgba(255,154,158,0.9), rgba(251,194,235,0.9));
   box-shadow: 0 10px 24px rgba(0,0,0,0.35);
   font-weight: 800;
+  color: rgba(20,20,20,0.75);
 }
 .tip{ opacity: .85; font-size: 13px; }
 </style>

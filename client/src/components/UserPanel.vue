@@ -151,79 +151,108 @@
     }
   }
 </script>
-
 <style scoped>
-  .userbox{
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
+.userbox{
+  position: relative;
+  display: flex;
+  align-items: center;
 
-  .avatar-btn{
-    border: 0;
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-  }
+  /* ✅ 让弹层层级高于 nav 本体 */
+  z-index: 70;
+}
 
-  .avatar-img{
-    width: 42px;
-    height: 42px;
-    border-radius: 999px;
-    object-fit: cover;
-    display: block;
-    border: 2px solid rgba(255,255,255,0.45);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.22);
-  }
+.avatar-btn{
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
 
-  .pop{
-    position: absolute;
-    right: 0;
-    top: calc(100% + 10px);
-    width: 240px;
-    padding: 12px;
-    border-radius: 16px;
-    background: rgb(210, 188, 188);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.28);
-  }
+.avatar-img{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+  border: 2px solid rgba(255,255,255,0.45);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+}
 
-  .who{ margin-bottom: 10px; }
-  .name{ font-weight: 800; color: rgba(40,40,40,0.92); }
-  .sub{ font-size: 12px; opacity: .75; }
+.pop{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  width: 260px;
+  padding: 12px;
+  border-radius: 18px;
 
-  .upload{ display:block; margin: 8px 0 10px; }
-  .file{ display:none; }
-  .upload-btn{
-    display: inline-block;
-    padding: 8px 12px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.55);
-    color: rgba(40,40,40,0.9);
-    font-size: 14px;
-    cursor: pointer;
-    user-select: none;
-  }
+  /* ✅ 深色毛玻璃 */
+  background: rgba(12, 14, 28, 0.72);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 18px 44px rgba(0,0,0,0.55);
 
-  .menu{ display:flex; flex-direction: column; gap: 8px; }
-  .row{
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.35);
-    cursor: pointer;
-  }
-  .row:hover{ background: rgba(255,255,255,0.5); }
+  /* ✅ 关键：弹层要压过页面其它卡片/模糊层 */
+  z-index: 9999;
+}
 
-  .logout{
-    width: 100%;
-    margin-top: 10px;
-    border: 0;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(255,120,150,0.35);
-    cursor: pointer;
-  }
+.who{ margin-bottom: 10px; }
+.name{ font-weight: 900; color: rgba(255,255,255,0.92); }
+.sub{ font-size: 12px; opacity: .75; color: rgba(255,255,255,0.75); }
 
-  .guest{ font-weight: 700; margin-bottom: 8px; }
+.upload{ display:block; margin: 8px 0 10px; }
+.file{ display:none; }
+.upload-btn{
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.90);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.upload-btn:hover{
+  background: rgba(255,154,158,0.15);
+  border-color: rgba(255,154,158,0.35);
+}
+
+.menu{ display:flex; flex-direction: column; gap: 8px; }
+.row{
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  color: rgba(255,255,255,0.88);
+}
+.row:hover{
+  background: rgba(255,154,158,0.15);
+  border-color: rgba(255,154,158,0.25);
+}
+
+.logout,
+.login-btn{
+  width: 100%;
+  margin-top: 10px;
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(45deg, rgba(255,154,158,0.95), rgba(250,208,196,0.95));
+  box-shadow: 0 10px 24px rgba(255,154,158,0.18);
+}
+
+.logout{
+  background: linear-gradient(45deg, rgba(255,120,150,0.9), rgba(255,90,120,0.9));
+}
+
+.guests{
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: rgba(255,255,255,0.92);
+}
 </style>

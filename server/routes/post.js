@@ -20,6 +20,46 @@ async function requireAuth(req, res, next) {
   }
 }
 
+
+// GET /api/post/:id/related?limit=6
+router.get('/:id/related', async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    if (!id) return res.status(400).json({ ok: false, message: 'invalid id' })
+
+    const limit = Math.min(Number(req.query.limit) || 6, 20)
+
+    // 先拿当前帖子的 category
+    const [curRows] = await pool.query(
+      'SELECT id, category FROM posts WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+      [id]
+    )
+    if (curRows.length === 0) return res.status(404).json({ ok: false, message: 'post not found' })
+
+    const category = curRows[0].category
+
+    // 同分类最新帖子，排除自己
+    const [rows] = await pool.query(
+      `
+      SELECT p.id, p.title, p.created_at, p.likes_count, p.replies_count,
+             u.username AS author
+      FROM posts p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.deleted_at IS NULL
+        AND p.category = ?
+        AND p.id <> ?
+      ORDER BY p.created_at DESC
+      LIMIT ?
+      `,
+      [category, id, limit]
+    )
+
+    res.json({ ok: true, category, posts: rows, limit })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
 // GET /api/post/hot?limit=5
 router.get('/hot', async (req, res) => {
   try {
