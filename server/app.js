@@ -7,6 +7,7 @@ const userRouter = require('./routes/user')
 const postRouter = require('./routes/post')
 const commentRouter = require('./routes/comment')
 const boardRouter = require('./routes/board')
+const dmRouter = require('./routes/dm')
 const { pool }  = require('./db')
 
 
@@ -32,11 +33,12 @@ app.get('/api/db/ping', async (req, res) => {
     }
 })
 
-// 挂载路由（只做模板，不写业务逻辑）
+// 挂载路由
 app.use('/api/user', userRouter)
 app.use('/api/post', postRouter)
 app.use('/api/comment', commentRouter)
 app.use('/api/board', boardRouter)
+app.use('/api/dm', dmRouter)
 
 // 404 兜底（避免接口找不到时前端拿到一堆默认 HTML）
 app.use((req, res) => {

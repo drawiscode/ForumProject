@@ -18,6 +18,7 @@ const Board = () => import('../views/Board.vue')
 const CommentThread = () => import('../views/CommentThread.vue')
 const CommentDialog = () => import('../views/CommentDialog.vue')  
 
+const Messages = () => import('../views/Messages.vue');
 const routes = 
 [
   { path: '/', name: 'Home', component: Home },
@@ -35,8 +36,9 @@ const routes =
   { path: '/board/:name', name: 'Board', component: Board },
 
   {path: '/comment/thread/:id',name:'comment-thread',component:CommentThread},
-  {path: '/comment/dialog/:id',name:'comment-dialog',component:CommentDialog}
+  {path: '/comment/dialog/:id',name:'comment-dialog',component:CommentDialog},
 
+  {path: '/messages', name: 'Messages', component: Messages, meta: { requiresAuth: true } }
 ]
 
 export default createRouter

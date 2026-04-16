@@ -365,10 +365,10 @@
 
     /* 帖子标题+内容 */
     .post-content {
-    margin-bottom: 25px;
-    line-height: 1.8;
-    font-size: 17px;
-    color: rgba(255, 255, 255, 0.95);
+        margin-bottom: 25px;
+        line-height: 1.8;
+        font-size: 17px;
+        color: rgba(212, 199, 199, 0.95);
     }
     .post_title {
     font-size: 22px;

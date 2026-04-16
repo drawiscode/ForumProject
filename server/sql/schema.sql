@@ -19,11 +19,15 @@ CREATE TABLE IF NOT EXISTS users (
   allow_dm       TINYINT(1) NOT NULL DEFAULT 1 ,
   password_hash VARCHAR(255) NOT NULL,
   role         ENUM('user','admin') NOT NULL DEFAULT 'user',
+
+  fans_count INT UNSIGNED NOT NULL DEFAULT 0,
+  follow_count INT UNSIGNED NOT NULL DEFAULT 0,
+
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 ALTER TABLE users
-  ADD COLUMN public_profile TINYINT(1) NOT NULL DEFAULT 1 AFTER bio,
-  ADD COLUMN allow_dm       TINYINT(1) NOT NULL DEFAULT 1 AFTER public_profile;
+  ADD COLUMN fans_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER role,
+  ADD COLUMN follow_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER fans_count;
 
 -- 帖子表
 CREATE TABLE IF NOT EXISTS posts (
@@ -196,3 +200,46 @@ CREATE TABLE IF NOT EXISTS comment_likes (
     ON UPDATE CASCADE
     ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- 用户关注表(关注关系)
+CREATE TABLE IF NOT EXISTS user_follows(
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  follower_id BIGINT UNSIGNED NOT NULL, -- 粉丝（关注者）
+  followee_id BIGINT UNSIGNED NOT NULL, -- 被关注者
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uk_user_follows (follower_id, followee_id),
+  INDEX idx_user_follows_follower (follower_id),
+  INDEX idx_user_follows_followee (followee_id),
+
+  CONSTRAINT fk_user_follows_follower
+    FOREIGN KEY (follower_id) REFERENCES users(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  CONSTRAINT fk_user_follows_followee
+    FOREIGN KEY (followee_id) REFERENCES users(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+)ENGINE=InnoDB;
+
+-- 私信表（点对点消息）
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  sender_id BIGINT UNSIGNED NOT NULL,
+  receiver_id BIGINT UNSIGNED NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  INDEX idx_dm_receiver_time (receiver_id, created_at),
+  INDEX idx_dm_sender_time (sender_id, created_at),
+
+  CONSTRAINT fk_dm_sender
+    FOREIGN KEY (sender_id) REFERENCES users(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  CONSTRAINT fk_dm_receiver
+    FOREIGN KEY (receiver_id) REFERENCES users(id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+ALTER TABLE direct_messages
+  MODIFY COLUMN content TEXT NOT NULL;

@@ -155,5 +155,58 @@ node-server/
 ```
 
 ---
+## 需求扩展
+
+### A. 基础体验（优先级：高，1-2 天）
+帖子列表分页/无限滚动
+页面：Home、Board
+接口：GET /api/post?page&size、GET /api/board/:name/posts?page&size
+搜索（标题/内容/作者）
+页面：Navbar 增加搜索框、Search 结果页
+接口：GET /api/search?q=&category=&sort=
+评论排序/高亮作者/楼层号
+页面：PostDetail
+数据：comment 增加 created_at；前端按时间/热度切换
+
+
+### B. 互动系统（优先级：高，2-4 天）
+收藏/取消收藏帖子
+页面：PostDetail、我的收藏列表
+表：post_favorites(user_id, post_id, created_at)
+接口：POST /api/post/:id/favorite、DELETE /api/post/:id/favorite
+关注用户 / 粉丝列表
+页面：UserProfile、我的关注
+表：user_follow(follower_id, followee_id, created_at)
+接口：POST/DELETE /api/user/:id/follow
+通知中心（别人回复你/点赞你/关注你）
+页面：右上角铃铛、通知列表
+表：notifications(user_id, type, payload, is_read, created_at)
+接口：GET /api/notify、POST /api/notify/:id/read
+
+### C. 内容管理（优先级：中，3-6 天）
+编辑/删除帖子（作者权限）
+页面：PostDetail 增加“编辑/删除”按钮
+接口：PUT /api/post/:id、DELETE /api/post/:id
+评论删除/撤回（作者/管理员）
+接口：DELETE /api/comment/:id
+富文本/Markdown（加分项）
+前端：Markdown 编辑器 + 渲染
+安全：后端/前端做 XSS 处理（白名单）
+
+### D. 运营与后台（优先级：中，4-8 天）
+举报系统（帖子/评论）
+表：reports(type, target_id, reporter_id, reason, status, created_at)
+后台页：管理员审核、封禁
+板块管理（可新增/排序/描述/图标）
+表：boards(name,key,desc,order,created_at)
+前端：导航动态渲染（不写死）
+置顶/精华/锁帖
+post 字段：is_pinned,is_featured,is_locked
+列表排序：置顶优先
+E. 性能与工程化（优先级：加分，持续）
+接口缓存/防抖（热门/板块页）
+图片上传压缩 + CDN
+单元测试/接口测试（至少给核心接口加测试）
+
 
 这份文档与指令贴合课程项目需求，Copilot 能据此生成项目骨架并逐步完善。需要我把框架生成指令压缩成一行，直接粘贴到 Copilot 对话框就能用吗？

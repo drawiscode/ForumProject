@@ -57,9 +57,12 @@ router.get('/:id/public', async (req, res) => {
     const id = Number(req.params.id)
     if(!id) return res.status(400).json({ ok: false, message: 'invalid user id' })
 
+    const viewerId = Number(req.header('x-user-id')) || 0
+
     const [rows] = await pool.query(
       `
-      SELECT id, username, avatar_url, gender, bio, created_at
+      SELECT id, username, avatar_url, gender, bio, created_at,
+             fans_count, follow_count, allow_dm
       FROM users
       WHERE id = ? AND (public_profile = 1 OR public_profile IS NULL)
       LIMIT 1
@@ -71,8 +74,17 @@ router.get('/:id/public', async (req, res) => {
     const [cnt] =await pool.query(
       'SELECT COUNT(*) AS posts_count FROM posts WHERE user_id = ? AND deleted_at IS NULL',
       [id]
-    )
-    res.json({ ok: true, user: {...rows[0], posts_count: cnt[0]?.posts_count || 0 } })
+    );
+
+    let is_following = false;
+    if(viewerId && viewerId !== id){
+      const [f] = await pool.query(
+        'SELECT id FROM user_follows WHERE follower_id = ? AND followee_id = ? LIMIT 1',
+        [viewerId, id]
+      )
+      is_following = f.length > 0
+    }
+    res.json({ ok: true, user: {...rows[0], posts_count: cnt[0]?.posts_count || 0 , is_following} })
   }catch(err){
     res.status(500).json({ ok: false, message: err.message })
   }
@@ -325,5 +337,70 @@ router.post('/me/privacy', requireAuth, async (req, res) => {
   }
 })
 
+/*POST /api/user/:id/follow 关注 */ 
+router.post('/:id/follow',requireAuth, async (req, res) => {
+  const conn =await pool.getConnection()
+  try{
+    const targetId = Number(req.params.id)
+    const meId = Number(req.user.id)
+    if(!targetId) return res.status(400).json({ ok: false, message: 'invalid target user id' })
+    if(targetId === meId) return res.status(400).json({ ok: false, message: 'cannot follow yourself' })
+      
+    await conn.beginTransaction()
 
+    //插入关注关系(存在则忽略)
+    const [r] = await conn.query(
+      'INSERT IGNORE INTO user_follows (follower_id, followee_id) VALUES (?, ?)',
+      [meId, targetId]
+    )
+    
+    if(r.affectedRows === 0){//已经关注
+      await conn.rollback()
+      return res.json({ok:true,followed: true, message: 'already following'})
+    }
+
+    await conn.query('UPDATE users SET follow_count = follow_count + 1 WHERE id = ?', [meId])
+    await conn.query('UPDATE users SET fans_count = fans_count + 1 WHERE id = ?', [targetId])
+    
+    await conn.commit()
+    res.json({ok: true, followed: true, message: 'followed successfully' })
+  }catch(err){
+    try{await conn.rollback()}catch{}
+    res.status(500).json({ ok: false, message: err.message })
+  } finally{
+    conn.release()
+  }
+})  
+
+
+/*DELETE /api/user/:id/follow 取关 */
+router.delete('/:id/follow',requireAuth, async (req, res) => {
+  const conn = await pool.getConnection();
+  try{
+    const targetId = Number(req.params.id);
+    const meId = Number(req.user.id);
+    if(!targetId) return res.status(400).json({ ok: false, message:'invalid target user id' });
+    if(targetId === meId) return res.status(400).json({ ok: false, message:'cannot unfollow yourself' });
+    
+    await conn.beginTransaction();
+    const [r]=await conn.query(
+      'DELETE FROM user_follows WHERE follower_id = ? AND followee_id = ?',
+      [meId, targetId]
+    )
+    if(r.affectedRows === 0){
+      await conn.rollback();
+      return res.json({ ok: true, followed: false, message:'not following' });
+    }
+    await conn.query('UPDATE users SET follow_count = follow_count - 1 WHERE id = ?', [meId]);
+    await conn.query('UPDATE users SET fans_count = fans_count - 1 WHERE id = ?', [targetId]);
+    
+    await conn.commit();
+    res.json({ok: true, followed: true, message:'unfollowed successfully' });
+  }catch(err){
+    try{ await conn.rollback() }catch{}
+    res.status(500).json({ ok: false, message: err.message })
+  }finally{
+    conn.release()
+  }
+})  
 module.exports = router

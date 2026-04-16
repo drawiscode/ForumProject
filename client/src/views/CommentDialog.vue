@@ -124,14 +124,14 @@ export default {
 </script>
 
 <style scoped>
-.card { padding: 14px; }
-.comment { padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
-.meta { display:flex; gap:10px; align-items:center; }
-.time { font-size: 12px; opacity:.7; }
-.actions { margin-top:6px; }
-.link { border:0; background:transparent; cursor:pointer; color:#0b57d0; padding:0; }
-.textarea { width: 100%; min-height: 90px; }
-.btn { margin-top: 8px; }
-.err { color: #b00020; }
-.muted { opacity: .7; }
+  .card { padding: 14px; }
+  .comment { padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+  .meta { display:flex; gap:10px; align-items:center; }
+  .time { font-size: 12px; opacity:.7; }
+  .actions { margin-top:6px; }
+  .link { border:0; background:transparent; cursor:pointer; color:#0b57d0; padding:0; }
+  .textarea { width: 100%; min-height: 90px; }
+  .btn { margin-top: 8px; }
+  .err { color: #b00020; }
+  .muted { opacity: .7; }
 </style>

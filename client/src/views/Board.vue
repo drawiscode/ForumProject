@@ -1,6 +1,6 @@
 <template>
   <div class="board-view">
-    <h2>板块：{{ boardName }}</h2>
+    <h2 class="board_title">板块：{{ boardName }}</h2>
 
     <div v-if="postsLoading">正在加载帖子...</div>
     <div v-else-if="error" class="err">{{ error }}</div>
@@ -88,22 +88,27 @@
     cursor: pointer;
   }
 
+  .board_title{
+    margin: 0 0 20px;
+    font-size: 24px;
+    color: rgba(255, 182, 193, 0.95);
+  }
   .title {
     margin: 0 0 8px;
     font-size: 18px;
-    color: rgb(142, 53, 145);
+    color: rgba(230, 169, 196, 0.9);
   }
 
   .excerpt {
     margin: 0 0 10px;
-    color: rgba(0, 0, 0, 0.75);
+    color: rgba(212, 199, 199, 0.95);
   }
 
   .meta {
     display: flex;
     gap: 8px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(221, 195, 223, 0.55);
   }
 
   .err {
@@ -111,5 +116,17 @@
   }
   .muted {
     color: rgba(0, 0, 0, 0.55);
+  }
+
+  .post-item {
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    padding: 18px 16px;
+
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 </style>

@@ -12,9 +12,14 @@
             <p><strong>注册时间:</strong>{{me.created_at}}</p>
 
           <div class="avatar">
-            <div class="circle">{{ (me.username || '?').slice(0, 1).toUpperCase() }}</div>
-            <div class="tip">头像占位（后续可改成上传/选头像）</div>
-          </div>
+            <img v-if="me.avatar_url" class="avatar-img" :src="me.avatar_url" alt="avatar" />
+            <div v-else class="circle">{{ (me.username || '?').slice(0, 1).toUpperCase() }}</div>
+
+            <div class="tip">
+              <div>当前头像</div>
+              <div class="muted">可在右上角头像菜单上传/更换</div>
+            </div>
+        </div>
 
         </div>
     </section>
@@ -46,39 +51,54 @@ export default {
 }
 
 </script>
+
 <style scoped>
-.card {
-  width: min(760px, 96%);
-  margin: 18px auto 0;
-  padding: 18px 16px;
-  border-radius: 20px;
 
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  .avatar { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
 
-  color: rgba(255, 255, 255, 0.9);
-}
+  .avatar-img{
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.35);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  }
 
-h2 {
-  margin-bottom: 12px;
-  background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+  .tip{ opacity: .85; font-size: 13px; display:flex; flex-direction: column; gap: 2px; }
+  .muted{ font-size: 12px; opacity: .7; }
+  .card {
+    width: min(760px, 96%);
+    margin: 18px auto 0;
+    padding: 18px 16px;
+    border-radius: 20px;
 
-.error { color: #ff9dbf; }
-.box { display: grid; gap: 6px; }
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 
-.avatar { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
-.circle{
-  width: 56px; height: 56px; border-radius: 999px;
-  display:flex; align-items:center; justify-content:center;
-  background: linear-gradient(45deg, rgba(255,154,158,0.9), rgba(251,194,235,0.9));
-  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-  font-weight: 800;
-  color: rgba(20,20,20,0.75);
-}
-.tip{ opacity: .85; font-size: 13px; }
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  h2 {
+    margin-bottom: 12px;
+    background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .error { color: #ff9dbf; }
+  .box { display: grid; gap: 6px; }
+
+  .avatar { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
+  .circle{
+    width: 56px; height: 56px; border-radius: 999px;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(45deg, rgba(255,154,158,0.9), rgba(251,194,235,0.9));
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    font-weight: 800;
+    color: rgba(20,20,20,0.75);
+  }
+  .tip{ opacity: .85; font-size: 13px; }
 </style>

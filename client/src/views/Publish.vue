@@ -84,80 +84,110 @@ export default {
 
 </script>
 <style scoped>
-.card{
-  width: min(900px, 96%);
-  margin: 18px auto 0;
-  display: flex;
-  flex-direction: column;
-  padding: 18px 16px;
-  border-radius: 20px;
+    .card{
+        width: min(900px, 96%);
+        margin: 18px auto 0;
+        display: flex;
+        flex-direction: column;
+        padding: 18px 16px;
+        border-radius: 20px;
 
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 
-  color: rgba(255, 255, 255, 0.9);
-  font-style: italic;
-}
+        color: rgba(255, 255, 255, 0.9);
+        font-style: italic;
+    }
 
-.fatie{
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 12px;
-  background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+    .fatie{
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    }
 
-.title{
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: rgba(255,255,255,0.85);
-}
+    .title{
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: rgba(255,255,255,0.85);
+    }
 
-.form{ display:flex; flex-direction: column; gap: 14px; margin-bottom: 12px; }
+    .form{ display:flex; flex-direction: column; gap: 14px; margin-bottom: 12px; }
 
-.label{
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+    .label{
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
 
-.input,
-.input_ta{
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(0,0,0,0.18);
-  color: rgba(255,255,255,0.92);
-  border-radius: 14px;
-  padding: 10px 12px;
-  outline: none;
-}
+    .input,
+    .input_ta{
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(0,0,0,0.18);
+        color: rgba(255,255,255,0.92);
+        border-radius: 14px;
+        padding: 10px 12px;
+        outline: none;
+    }
 
-.input{ width: 280px; max-width: 100%; min-height: 40px; }
-.input_ta{ width: 100%; min-height: 260px; resize: vertical; }
+    /* ✅ 下拉框：本体 */
+    select.input{
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-color: rgba(0,0,0,0.22);
+        color: rgba(255,255,255,0.92);
+    }
 
-.input::placeholder,
-.input_ta::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  font-style: italic;
-  font-weight: 500;
-  opacity: 1;
-}
+    /* ✅ 下拉框：展开后的选项（多数浏览器可生效） */
+    select.input option{
+        background-color: rgb(18, 20, 34); /* 深色列表背景 */
+        color: rgba(255,255,255,0.92);
+    }
 
-.btn{
-  width: 160px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  color: #fff;
-  background: linear-gradient(45deg, #ff9a9e, #fad0c4);
-  box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
-}
+    /* ✅ 禁用提示项也做弱化 */
+    select.input option:disabled{
+        color: rgba(255,255,255,0.55);
+    }
 
-.error{ margin:0; color:#ff9dbf; }
-.ok{ margin:0; color:#b8ffcf; }
+
+    /* ✅ 更推荐：键盘操作时才显示（不影响鼠标点击观感） */
+    .input:focus-visible,
+    .input_ta:focus-visible,
+    select.input:focus-visible {
+        border-color: rgba(255,154,158,0.62);
+        box-shadow: 0 0 0 4px rgba(255,154,158,0.22);
+    }
+
+    
+    .input{ width: 280px; max-width: 100%; min-height: 40px; }
+    .input_ta{ width: 100%; min-height: 260px; resize: vertical; }
+
+    .input::placeholder,
+    .input_ta::placeholder {
+        color: rgba(161, 160, 160, 0.6);
+        font-size: 13px;
+        font-style: italic;
+        font-weight: 500;
+        opacity: 1;
+    }
+
+    .btn{
+    width: 160px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+    }
+
+    .error{ margin:0; color:#ff9dbf; }
+    .ok{ margin:0; color:#b8ffcf; }
 </style>
