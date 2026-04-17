@@ -52,6 +52,49 @@ const upload = multer({
 })
 
 
+
+// GET /api/user/me/following
+router.get('/me/following', requireAuth, async (req, res) => {
+  try {
+    const myId = req.user.id
+    const [rows] = await pool.query(
+      `
+      SELECT u.id, u.username, u.avatar_url, u.fans_count, u.follow_count
+      FROM user_follows f
+      JOIN users u ON u.id = f.followee_id
+      WHERE f.follower_id = ?
+      ORDER BY f.created_at DESC
+      LIMIT 200
+      `,
+      [myId]
+    )
+    res.json({ ok: true, users: rows })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+// GET /api/user/me/fans
+router.get('/me/fans', requireAuth, async (req, res) => {
+  try {
+    const myId = req.user.id
+    const [rows] = await pool.query(
+      `
+      SELECT u.id, u.username, u.avatar_url, u.fans_count, u.follow_count
+      FROM user_follows f
+      JOIN users u ON u.id = f.follower_id
+      WHERE f.followee_id = ?
+      ORDER BY f.created_at DESC
+      LIMIT 200
+      `,
+      [myId]
+    )
+    res.json({ ok: true, users: rows })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
 router.get('/:id/public', async (req, res) => {
   try{
     const id = Number(req.params.id)
@@ -123,7 +166,9 @@ router.get('/active', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, username, role, created_at, avatar_url, gender, bio, public_profile, allow_dm FROM users WHERE id = ? LIMIT 1',
+      `SELECT id, username, role, created_at, avatar_url, gender, bio, public_profile, 
+      allow_dm, follow_count, fans_count 
+      FROM users WHERE id = ? LIMIT 1`,
       [req.user.id]
     )
     if (rows.length === 0) return res.status(404).json({ ok: false, message: 'user not found' })

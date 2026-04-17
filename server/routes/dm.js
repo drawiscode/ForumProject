@@ -17,6 +17,103 @@ async function requireAuth(req, res, next) {
   }
 }
 
+
+//  会话列表：按对方聚合 + 最近一条消息
+// GET /api/dm/threads?limit=50
+router.get('/threads', requireAuth, async (req, res) => {
+  try {
+    const myId = req.user.id
+    const limit = Math.min(Number(req.query.limit) || 50, 200)
+
+    const [rows] = await pool.query(
+      `
+      SELECT *
+      FROM (
+        SELECT
+          dm.id,
+          dm.sender_id,
+          dm.receiver_id,
+          dm.content,
+          dm.created_at,
+          CASE
+            WHEN dm.sender_id = ? THEN dm.receiver_id
+            ELSE dm.sender_id
+          END AS peer_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY
+              CASE
+                WHEN dm.sender_id = ? THEN dm.receiver_id
+                ELSE dm.sender_id
+              END
+            ORDER BY dm.created_at DESC, dm.id DESC
+          ) AS rn
+        FROM direct_messages dm
+        WHERE dm.sender_id = ? OR dm.receiver_id = ?
+      ) t
+      JOIN users u ON u.id = t.peer_id
+      WHERE t.rn = 1
+      ORDER BY t.created_at DESC, t.id DESC
+      LIMIT ?
+      `,
+      [myId, myId, myId, myId, limit]
+    )
+
+    const threads = rows.map(r => ({
+      peer: { id: r.peer_id, username: r.username, avatar_url: r.avatar_url },
+      last: { id: r.id, sender_id: r.sender_id, receiver_id: r.receiver_id, content: r.content, created_at: r.created_at }
+    }))
+
+    res.json({ ok: true, threads, limit })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+router.get('/with/:uid', requireAuth, async (req, res) => {
+  try {
+    const myId = req.user.id
+    const peerId = Number(req.params.uid)
+    const limit = Math.min(Number(req.query.limit) || 50, 200)
+    const beforeId = Number(req.query.before_id) || 0
+    const afterId = Number(req.query.after_id) || 0
+
+    if (!peerId) return res.status(400).json({ ok: false, message: 'invalid peer id' })
+    if (peerId === myId) return res.status(400).json({ ok: false, message: 'invalid peer id' })
+
+    const params = [myId, peerId, peerId, myId]
+    let extra = ''
+    if (beforeId) {
+      extra += ' AND dm.id < ? '
+      params.push(beforeId)
+    }
+    if (afterId) {
+      extra += ' AND dm.id > ? '
+      params.push(afterId)
+    }
+    params.push(limit)
+
+    const [rows] = await pool.query(
+      `
+      SELECT dm.id, dm.sender_id, dm.receiver_id, dm.content, dm.created_at
+      FROM direct_messages dm
+      WHERE (
+        (dm.sender_id = ? AND dm.receiver_id = ?)
+        OR
+        (dm.sender_id = ? AND dm.receiver_id = ?)
+      )
+      ${extra}
+      ORDER BY dm.id ASC
+      LIMIT ?
+      `,
+      params
+    )
+
+    res.json({ ok: true, messages: rows, limit })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
 // GET /api/dm/inbox?limit=50  (我的历史私信：发给我 or 我发出的)
 router.get('/inbox', requireAuth, async (req, res) => {
   try {

@@ -124,14 +124,90 @@ export default {
 </script>
 
 <style scoped>
-  .card { padding: 14px; }
-  .comment { padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
-  .meta { display:flex; gap:10px; align-items:center; }
-  .time { font-size: 12px; opacity:.7; }
-  .actions { margin-top:6px; }
-  .link { border:0; background:transparent; cursor:pointer; color:#0b57d0; padding:0; }
-  .textarea { width: 100%; min-height: 90px; }
-  .btn { margin-top: 8px; }
-  .err { color: #b00020; }
-  .muted { opacity: .7; }
+  .card{
+    width: min(900px, 96%);
+    margin: 18px auto 0;
+    padding: 16px;
+    border-radius: 20px;
+
+    background: rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    z-index: 1;
+  }
+
+  h2, h3{
+    margin: 10px 0 10px;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .comment{
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+  }
+
+  .meta{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content: space-between;
+  }
+
+  .meta b{ color: rgba(255,255,255,0.92); }
+  .time{ font-size: 12px; opacity:.7; }
+  .content{ margin-top: 6px; white-space: pre-wrap; }
+
+  .actions{ margin-top:8px; }
+
+  .link{
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    color: rgba(255, 196, 214, 0.95);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .link:hover{ color: rgba(255, 154, 158, 1); }
+
+  .composer{ margin-top: 12px; }
+  .textarea{
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.18);
+    color: rgba(255,255,255,0.92);
+    padding: 10px 12px;
+    outline: none;
+  }
+  .textarea:focus{
+    border-color: rgba(255,154,158,0.55);
+    box-shadow: 0 0 0 3px rgba(255,154,158,0.18);
+  }
+
+  .btn{
+    margin-top: 10px;
+    border: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    box-shadow: 0 10px 24px rgba(255,154,158,0.18);
+  }
+  .btn:disabled{ opacity: .6; cursor: not-allowed; }
+
+  .err{ color: #ff7878; }
+  .muted{ opacity: .75; }
 </style>

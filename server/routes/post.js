@@ -21,6 +21,27 @@ async function requireAuth(req, res, next) {
 }
 
 
+// ✅ 放在 router.get('/:id') 之前
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const myId = req.user.id
+    const [rows] = await pool.query(
+      `
+      SELECT id, title, category, created_at
+      FROM posts
+      WHERE user_id = ? AND deleted_at IS NULL
+      ORDER BY created_at DESC
+      LIMIT 200
+      `,
+      [myId]
+    )
+    res.json({ ok: true, posts: rows })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+
 // GET /api/post/:id/related?limit=6
 router.get('/:id/related', async (req, res) => {
   try {

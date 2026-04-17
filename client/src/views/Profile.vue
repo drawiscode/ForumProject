@@ -11,48 +11,84 @@
             <p><strong>角色:</strong>{{me.role}}</p>
             <p><strong>注册时间:</strong>{{me.created_at}}</p>
 
-          <div class="avatar">
-            <img v-if="me.avatar_url" class="avatar-img" :src="me.avatar_url" alt="avatar" />
-            <div v-else class="circle">{{ (me.username || '?').slice(0, 1).toUpperCase() }}</div>
+            <div class="avatar">
+                <img v-if="me.avatar_url" class="avatar-img" :src="me.avatar_url" alt="avatar" />
+                <div v-else class="circle">{{ (me.username || '?').slice(0, 1).toUpperCase() }}</div>
 
-            <div class="tip">
-              <div>当前头像</div>
-              <div class="muted">可在右上角头像菜单上传/更换</div>
+                <div class="tip">
+                  <div>当前头像</div>
+                  <div class="muted">可在右上角头像菜单上传/更换</div>
+                </div>
             </div>
-        </div>
 
+             <!--新增:快捷入口 -->
+            <div class="quick">
+              <button class="btn ghost" type="button" @click="$router.push('/me/following')">
+                我的关注
+              </button>
+              
+              <button class="btn ghost" type="button" @click="$router.push('/me/fans')">
+                我的粉丝
+              </button>
+              
+              <button class="btn ghost" type="button" @click="$router.push('/my-posts')">
+                我的发贴
+              </button>
+            </div>
         </div>
     </section>
 
 </template>
 
 <script>
-import {apiFetch} from '../api/http'
+  import {apiFetch} from '../api/http'
 
-export default {
-    name: 'Profile',
-    data() {
-        return {
-            loading: true,
-            error: '',
-            me:null
-        }
-    },
-    async mounted() {
-        try {
-            const data = await apiFetch('/api/user/me')
-            this.me = data.user
-        } catch (err) {
-            this.error = err.message || '获取个人信息失败'
-        }finally{
-            this.loading = false
-        }
-    }
-}
+  export default {
+      name: 'Profile',
+      data() {
+          return {
+              loading: true,
+              error: '',
+              me:null
+          }
+      },
+      async mounted() {
+          try {
+              const data = await apiFetch('/api/user/me')
+              this.me = data.user
+          } catch (err) {
+              this.error = err.message || '获取个人信息失败'
+          }finally{
+              this.loading = false
+          }
+      }
+  }
 
 </script>
 
 <style scoped>
+  
+  .quick{
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn{
+    border: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    box-shadow: 0 10px 24px rgba(255,154,158,0.18);
+  }
+  .btn.ghost{
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: none;
+  }
 
   .avatar { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
 

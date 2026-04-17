@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const Home = () => import('../views/Home.vue')
-
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
+
 const PostDetail = () => import('../views/PostDetail.vue')
 const Publish = () => import('../views/Publish.vue')
 
@@ -11,6 +11,9 @@ const Profile =() => import('../views/Profile.vue')
 const UserProfile = () => import('../views/UserProfile.vue')
 
 const MyPosts = () => import('../views/MyPosts.vue')
+const MyFans = () => import('../views/MyFans.vue')
+const MyFollowing = () => import('../views/MyFollowing.vue')
+
 const Settings = () => import('../views/Settings.vue')
 
 const Board = () => import('../views/Board.vue')
@@ -19,6 +22,7 @@ const CommentThread = () => import('../views/CommentThread.vue')
 const CommentDialog = () => import('../views/CommentDialog.vue')  
 
 const Messages = () => import('../views/Messages.vue');
+const MessagesChat = () => import('../views/MessagesChat.vue');
 const routes = 
 [
   { path: '/', name: 'Home', component: Home },
@@ -31,6 +35,9 @@ const routes =
   {path: '/publish', name: 'Publish', component: Publish,meta:{ requiresAuth: true }},
 
   { path: '/my-posts', name: 'MyPosts', component: MyPosts, meta: { requiresAuth: true } },
+  { path: '/me/fans', name: 'MyFans', component: MyFans, meta: { requiresAuth: true } },
+  { path: '/me/following', name: 'MyFollowing', component: MyFollowing, meta: { requiresAuth: true } },
+  
   { path: '/settings', name: 'Settings', component: Settings, meta: { requiresAuth: true } },
 
   { path: '/board/:name', name: 'Board', component: Board },
@@ -38,7 +45,8 @@ const routes =
   {path: '/comment/thread/:id',name:'comment-thread',component:CommentThread},
   {path: '/comment/dialog/:id',name:'comment-dialog',component:CommentDialog},
 
-  {path: '/messages', name: 'Messages', component: Messages, meta: { requiresAuth: true } }
+  {path: '/messages', name: 'Messages', component: Messages, meta: { requiresAuth: true } },
+  {path: '/messages/:uid', name: 'MessagesChat', component: MessagesChat, meta: { requiresAuth: true } },
 ]
 
 export default createRouter
