@@ -10,8 +10,15 @@
 
       <div v-else class="list">
         <div v-for="p in posts" :key="p.id" class="item" @click="$router.push(`/post/${p.id}`)">
-          <div class="p-title">{{ p.title }}</div>
-          <div class="sub">{{ p.category }} · {{ formatTime(p.created_at) }}</div>
+          <div class="left">
+            <div class="p-title">{{ p.title }}</div>
+            <div class="sub">{{ p.category }} · {{ formatTime(p.created_at) }}</div>
+          </div> 
+          <div class="right">
+            <button class="danger" type="button" :disabled="deletingId === p.id" @click.stop="removePost(p.id)">
+            {{ deletingId === p.id ? '删除中...' : '删除' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -19,14 +26,15 @@
 </template>
 
 <script>
-  import { apiFetch } from '../api/http'
+  import { apiFetch } from '../../api/http'
   export default {
     name: 'MyPosts',
     data() { 
       return { 
         loading: false, 
         error: '', 
-        posts: [] 
+        posts: [],
+        deletingId: null
         } 
     },
     mounted() { 
@@ -49,12 +57,37 @@
         } finally {
           this.loading = false
         }
+      },
+      async removePost(id) {
+        if(!id) return;
+        if(!confirm('确定要删除这个帖子吗(该操作不可逆)?')) return;
+
+        this.deletingId=id;
+        try{
+          await apiFetch(`/api/post/${id}`,{method:'DELETE'});
+          this.posts = this.posts.filter(p=>p.id!==id);
+        }catch(e){
+          alert(e.message || '删除失败');
+        }finally{
+          this.deletingId = 0;
+        }
       }
     }
   }
 </script>
 
 <style scoped>
+
+
+  .danger{
+    border: 1px solid rgba(220, 191, 191, 0.5);
+    background: rgba(179, 174, 174, 0.12);
+    color: rgba(191, 166, 166, 0.9);
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .danger:disabled{ opacity:.6; cursor:not-allowed; }
   .wrap{ width: min(900px, 96%); margin: 18px auto 0; padding: 16px; position: relative; z-index: 1; }
   .card{
     background: rgba(255, 255, 255, 0.08);
@@ -82,6 +115,10 @@
   }
   .list{ display:flex; flex-direction:column; gap: 10px; }
   .item{
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center;
+    
     padding: 10px 12px;
     border-radius: 14px;
     background: rgba(0,0,0,0.16);

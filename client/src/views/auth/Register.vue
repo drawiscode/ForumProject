@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import { apiFetch } from '../api/http'
+import { apiFetch } from '../../api/http'
 
 export default 
 {

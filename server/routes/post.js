@@ -21,6 +21,74 @@ async function requireAuth(req, res, next) {
 }
 
 
+// ✅ 我的收藏列表（必须在 router.get('/:id') 之前）
+router.get('/favorites', requireAuth, async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 20, 50)
+    const [rows] = await pool.query(
+      `
+      SELECT p.id, p.title, p.category, p.created_at,
+             p.likes_count, p.replies_count, p.views_count, p.favorites_count
+      FROM post_favorites f
+      JOIN posts p ON p.id = f.post_id
+      WHERE f.user_id = ? AND p.deleted_at IS NULL
+      ORDER BY f.created_at DESC
+      LIMIT ?
+      `,
+      [req.user.id, limit]
+    )
+    res.json({ ok: true, posts: rows })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+// ✅ 收藏（也建议放在 router.get('/:id') 之前，避免未来扩展冲突）
+router.post('/:id/favorite', requireAuth, async (req, res) => {
+  try {
+    const postId = Number(req.params.id)
+    if (!postId) return res.status(400).json({ ok: false, message: 'invalid post id' })
+
+    // 用 affectedRows 判断是否真正插入，避免重复 +1
+    const [ins] = await pool.query(
+      'INSERT IGNORE INTO post_favorites (user_id, post_id, created_at) VALUES (?, ?, NOW())',
+      [req.user.id, postId]
+    )
+
+    if (ins.affectedRows > 0) {
+      await pool.query('UPDATE posts SET favorites_count = favorites_count + 1 WHERE id = ?', [postId])
+    }
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+router.delete('/:id/favorite', requireAuth, async (req, res) => {
+  try {
+    const postId = Number(req.params.id)
+    if (!postId) return res.status(400).json({ ok: false, message: 'invalid post id' })
+
+    const [del] = await pool.query(
+      'DELETE FROM post_favorites WHERE user_id = ? AND post_id = ?',
+      [req.user.id, postId]
+    )
+
+    if (del.affectedRows > 0) {
+      await pool.query(
+        'UPDATE posts SET favorites_count = GREATEST(favorites_count - 1, 0) WHERE id = ?',
+        [postId]
+      )
+    }
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+
 // ✅ 放在 router.get('/:id') 之前
 router.get('/me', requireAuth, async (req, res) => {
   try {
@@ -148,6 +216,11 @@ router.get('/:id', async (req, res) => {
     )
 
     if (rows.length === 0) return res.status(404).json({ ok: false, message: 'post not found' })
+    // 浏览量 +1（简单版）
+    await pool.query('UPDATE posts SET views_count = views_count + 1 WHERE id = ?', [id])
+    const post = rows[0]
+    post.views_count = (Number(post.views_count) || 0) + 1
+
     res.json({ ok: true, post: rows[0] })//rows[0]是个对象,包括p.id,p.title等内容
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message })
@@ -180,13 +253,13 @@ router.post('/', requireAuth, async (req, res) => {
 })
 
 // DELETE /api/post/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try{
       const id = Number(req.params.id)
       if(!id) return res.status(400).json({ ok: false, message: 'invalid id' })
 
       const [rows] = await pool.query(
-        'SELECT id, user_id deleted_at FROM posts WHERE id = ? LIMIT 1',
+        'SELECT id, user_id, deleted_at FROM posts WHERE id = ? LIMIT 1',
         [id]
       )
       if(rows.length === 0) return res.status(404).json({ ok: false, message: 'post not found' })
@@ -208,6 +281,7 @@ router.delete('/:id', async (req, res) => {
   }
 })
 
+// POST /api/post/like/:id 给帖子点赞
 router.post('/like/:id',requireAuth, async(req,res)=>{
   const conn =await pool.getConnection()
   try{
@@ -241,5 +315,39 @@ router.post('/like/:id',requireAuth, async(req,res)=>{
     conn.release()
   }
 })
+
+//DELETE /api/post/like/:id 取消点赞
+router.delete('/like/:id', requireAuth, async(req,res)=>{
+  const conn = await pool.getConnection()
+  try{
+    const id = Number(req.params.id)
+    if(!id) return res.status(400).json({ ok: false, message: 'invalid id' })
+
+    await conn.beginTransaction()
+
+    const [result] = await conn.query(
+      'DELETE FROM post_likes WHERE post_id = ? AND user_id = ?',
+      [id, req.user.id]
+    )
+    if(result.affectedRows === 0){
+      await conn.rollback()
+      return res.status(404).json({ ok: false, message: 'like not found' })
+    }
+
+    await conn.query(
+      'UPDATE posts SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = ?',
+      [id]
+    )
+
+    await conn.commit()
+    res.json({ ok: true })
+  }catch(err){
+    try{ await conn.rollback() }catch{}
+    res.status(500).json({ ok: false, message: err.message })
+  }finally{
+    conn.release()
+  }
+})
+
 
 module.exports = router

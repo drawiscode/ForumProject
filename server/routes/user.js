@@ -1,5 +1,6 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 const { pool } = require('../db')
 const path =require('path')
 const fs = require('fs')
@@ -30,6 +31,15 @@ function isEmail(str) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(str || '').trim())
 }
 
+
+function sha256(s) {
+  return crypto.createHash('sha256').update(String(s)).digest('hex')
+}
+function makeToken() {
+  return crypto.randomBytes(24).toString('hex')
+}
+
+
 const AVATAR_DIR = path.join(__dirname, '..', 'uploads', 'avatars')
 fs.mkdirSync(AVATAR_DIR, { recursive: true })
 
@@ -51,6 +61,89 @@ const upload = multer({
   }
 })
 
+
+
+// POST /api/user/password/forgot
+router.post('/password/forgot', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase()
+    if (!email || !isEmail(email)) return res.status(400).json({ ok: false, message: 'invalid email' })
+
+    const [uRows] = await pool.query('SELECT id, email FROM users WHERE email = ? LIMIT 1', [email])
+
+    // 安全：不暴露邮箱是否存在
+    if (uRows.length === 0) return res.json({ ok: true })
+
+    const user = uRows[0]
+    const token = makeToken()
+    const tokenHash = sha256(token)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15分钟
+
+    await pool.query(
+      'INSERT INTO password_resets (user_id, email, token_hash, expires_at) VALUES (?, ?, ?, ?)',
+      [user.id, email, tokenHash, expiresAt]
+    )
+
+    // TODO: 接入邮件服务：发送重置链接
+    // 课程/开发期：先把 token 返回（上线前务必移除）
+    res.json({ ok: true, dev_token: token })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+// POST /api/user/password/reset
+router.post('/password/reset', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase()
+    const token = String(req.body?.token || '').trim()
+    const newPassword = String(req.body?.new_password || '')
+
+    if (!email || !isEmail(email)) return res.status(400).json({ ok: false, message: 'invalid email' })
+    if (!token) return res.status(400).json({ ok: false, message: 'token required' })
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ ok: false, message: 'password length must be >= 6' })
+    }
+
+    const tokenHash = sha256(token)
+
+    const [rows] = await pool.query(
+      `
+      SELECT id, user_id, expires_at, used_at
+      FROM password_resets
+      WHERE email = ? AND token_hash = ?
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+      [email, tokenHash]
+    )
+
+    if (rows.length === 0) return res.status(400).json({ ok: false, message: 'invalid token' })
+
+    const r = rows[0]
+    if (r.used_at) return res.status(400).json({ ok: false, message: 'token already used' })
+    if (new Date(r.expires_at).getTime() < Date.now()) return res.status(400).json({ ok: false, message: 'token expired' })
+
+    const newHash = await bcrypt.hash(newPassword, 10)
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      await conn.query('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, r.user_id])
+      await conn.query('UPDATE password_resets SET used_at = NOW() WHERE id = ?', [r.id])
+      await conn.commit()
+    } catch (e) {
+      try { await conn.rollback() } catch {}
+      throw e
+    } finally {
+      conn.release()
+    }
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
 
 
 // GET /api/user/me/following

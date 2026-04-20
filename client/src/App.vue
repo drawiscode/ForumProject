@@ -42,7 +42,7 @@
     window.addEventListener('mousemove', onMouseMoveForSakura)
     cleanupFns.push(() => window.removeEventListener('mousemove', onMouseMoveForSakura))
 
-    // ========= 1) 樱花：更像花瓣/花朵 5瓣 =========
+    // ========= (1) 樱花：更像花瓣/花朵 5瓣 =========
     function drawPetalFlower(ctx, size) {
       // 画一个“花朵”轮廓 5瓣 ,用二次贝塞尔做圆润花瓣
       ctx.beginPath()

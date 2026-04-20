@@ -31,7 +31,7 @@
 </template>
 
 <script>
-    import { apiFetch } from '../api/http'
+    import { apiFetch } from '../../api/http'
 
     function getStoredUser() {
         const raw = localStorage.getItem('af_user')

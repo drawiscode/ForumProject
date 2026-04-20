@@ -243,3 +243,28 @@ CREATE TABLE IF NOT EXISTS direct_messages (
 
 ALTER TABLE direct_messages
   MODIFY COLUMN content TEXT NOT NULL;
+
+
+
+
+CREATE TABLE IF NOT EXISTS post_favorites (
+  user_id BIGINT NOT NULL,
+  post_id BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, post_id),
+  INDEX idx_post (post_id)
+);
+
+
+-- server/sql/password_resets.sql
+CREATE TABLE IF NOT EXISTS password_resets (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  token_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_user (user_id)
+);

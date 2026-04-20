@@ -32,7 +32,7 @@
     components: { UserPanel },
     data() {
       return {
-        user: getStoredUser()
+        user: getStoredUser(),
       }
     },
 

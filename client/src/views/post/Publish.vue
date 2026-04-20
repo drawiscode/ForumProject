@@ -15,6 +15,10 @@
                     <option value="学习交流">学习交流</option>
                     <option value="作品分享">作品分享</option>
                     <option value="求助问答">求助问答</option>
+                     
+                    <option value="情感天地">情感天地</option>
+                    <option value="网络科技">网络科技</option>
+                    <option value="娱乐八卦">娱乐八卦</option>
                 </select>
             </div>
 
@@ -35,7 +39,7 @@
 
 <script>
 
-import { apiFetch } from '../api/http'
+import { apiFetch } from '../../api/http'
 
 export default { 
     name: 'Publish',

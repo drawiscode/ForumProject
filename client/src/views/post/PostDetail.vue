@@ -22,29 +22,33 @@
                         </div>
                     </div>
                 </div>
-                <div class ="post-info">
+
+                <div class>
                     <div v-if="loading">加载中...</div>
                     <div v-else-if="error">{{error}} </div>
-                    <div v-else>
-                        <div>{{ post.category }}</div>
-                        <div>{{ formatTime(post.created_at) }}</div>
-
-                        <div class="stats">
-                        <span>👍 {{ post.likes_count }}</span>
-                        <span>💬 {{ post.replies_count }}</span>
-                        <span>👀 {{ post.views_count }}</span>
-                        <span>⭐ {{ post.favorites_count }}</span>
+                    <div v-else class="post-info">
+                        <div class="post_foot_message_left">
+                            <div>{{ post.category }}</div>
+                            <div>{{ formatTime(post.created_at) }}</div>
+                            <div class="stats">
+                                <span>点赞数: {{ post.likes_count }}</span>
+                                <span>评论数: {{ post.replies_count }}</span>
+                                <span>浏览数: {{ post.views_count }}</span>
+                                <span>收藏数: {{ post.favorites_count }}</span>
+                            </div>
                         </div>
 
-                        <button class="btn" type="button" @click="likePost" :disabled="likingPost">
-                            给帖子点赞
-                        </button>
+                        <div class="post_foot_message_right">
+                            <button class="btn" type="button" @click="likePost" :disabled="likingPost">
+                                {{liked ? '取消点赞' : '点赞'}}
+                            </button>
+                            <button class="btn" type="button" @click="StarPost" :disabled="staringPost">
+                                {{favored ? '取消收藏' : '收藏'}}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
-
-
 
             <div class="comments">
                 <!-- ✅ 回复提示条 -->
@@ -53,13 +57,9 @@
                     <button class="link" type="button" @click="cancelReply">取消</button>
                 </div>
 
-                <!-- ✅ 给 textarea 加 ref，startReply 会 focus -->
-                <textarea
-                    ref="commentInput"
-                    class="post-comment"
-                    v-model="mycomment"
-                    placeholder="请输入评论内容..."
-                ></textarea>
+                <!-- ✅ 给 textarea 加 ref,startReply 会 focus -->
+                <textarea ref="commentInput" class="post-comment" v-model="mycomment" placeholder="请输入评论内容...">
+                </textarea>
 
                 <button class="btn" type="button" @click="submitComment" :disabled="submitting">
                     提交评论
@@ -69,35 +69,41 @@
                 <div v-else-if="commentError" class="err">{{ commentError }}</div>
                 <div v-else>
                     <div class="comment" v-for="c in comments" :key="c.id">
-                        <div class="comment-author">
-                            {{c.author}}
+                    
+                        <div class="comment_foot_left">
+                            <div class="comment-author">
+                                {{c.author}}
+                            </div>
+                            <div class="comment-content">
+                                {{c.content}}
+                            </div>
+                            <div class="stats">
+                                <span class="small-info">点赞数 {{ c.likes_count }}</span>
+                                <span class="small-info">回复数 {{ c.reply_count }}</span>
+                            </div>
                         </div>
-                        
-                        <div class="comment-content">
-                            {{c.content}}
-                        </div>
+                        <div class="comment_foot_right">
 
-                        <div class="comment-info">
-                            <span>👍 {{ c.likes_count }}</span>
                             <button class="btn" type="button" @click="likeComment(c.id)">
-                                给评论点赞
+                                点赞
                             </button>
 
-                            <!-- ✅ A评论 回复创建B入口 -->
-                            <button class="btn" type="button" @click="startReply(c)">
-                                回复
-                            </button>
+                            <div class="reply-to-comment">
+                                <!-- ✅ A评论 回复创建B入口 -->
+                                <button class="btn" type="button" @click="startReply(c)">
+                                    回复
+                                </button>
 
-                            <!-- ✅ A评论 查看回复 -->
-                            <button
-                                v-if="Number(c.reply_count) > 0"
-                                class="btn"
-                                type="button"
-                                @click="openThread(c.id)"
-                            >
-                                查看回复({{ c.reply_count }})
-                            </button>
-
+                                <!-- ✅ A评论 查看回复 -->
+                                <button
+                                    v-if="Number(c.reply_count) > 0"
+                                    class="btn"
+                                    type="button"
+                                    @click="openThread(c.id)"
+                                >
+                                    查看回复({{ c.reply_count }})
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -132,7 +138,7 @@
 
 
 <script>
-    import { apiFetch } from '../api/http'
+    import { apiFetch } from '../../api/http'
 
     export default { 
         name: 'PostDetail' ,
@@ -148,7 +154,12 @@
                 commentError:'',
 
                 submitting: false,
+
                 likingPost: false,
+                liked: false,
+
+                staringPost: false,
+                favored: false,
 
                 replyTarget: null,    // {id,author} | null
 
@@ -185,6 +196,8 @@
                 try{
                     const post_data = await apiFetch(`/api/post/${this.id}`)
                     this.post = post_data.post
+                    this.favored = Boolean(this.post?.is_favorited)
+
                      await Promise.all([
                         this.loadComments(),
                         this.loadRelated()
@@ -241,12 +254,38 @@
                 if(!this.post) return
                 this.likingPost =true
                 try{
-                    await apiFetch(`/api/post/like/${this.post.id}`, { method: 'POST' })
-                    this.post.likes_count = (Number(this.post.likes_count) || 0) + 1
+                    if(!this.liked) {
+                        await apiFetch(`/api/post/like/${this.post.id}`, { method: 'POST' })
+                        this.post.likes_count = (Number(this.post.likes_count) || 0) + 1
+                        this.liked = true
+                    } else{
+                        await apiFetch(`/api/post/like/${this.post.id}`, { method: 'DELETE' })
+                        this.post.likes_count = Math.max((Number(this.post.likes_count) || 0) - 1, 0)
+                        this.liked = false
+                    }
                 } catch(e){
                     alert(e.message || '点赞失败')
-                }finally{
-                    this.likeingPost = false
+                } finally {
+                    this.likingPost = false
+                }
+            },
+            async StarPost(){
+                if(!this.post) return;
+                this.staringPost = true;
+                try{
+                    if(!this.favored){
+                        await apiFetch(`/api/post/${this.post.id}/favorite`, { method: 'POST' })
+                        this.favored = true;
+                        this.post.favorites_count = (Number(this.post.favorites_count) || 0) + 1
+                    } else{
+                        await apiFetch(`api/post/${this.post.id}/favorite`,{method:'DELETE'})
+                        this.favored = false
+                        this.post.favorites_count = Math.max((Number(this.post.favorites_count) || 0) - 1, 0)
+                    }
+                } catch(e) {
+                    alert(e.message || '收藏操作失败')
+                } finally {
+                    this.staringPost = false;
                 }
             },
             startReply(c) {  // ✅ 点“回复”按钮：进入回复模式，记录目标评论 id/作者
@@ -313,54 +352,52 @@
 
     /* 全局背景 + 樱花画布 */
     .content {
-    width: 100%;
-    min-height: 100vh;
-    padding: 20px;
-    display: flex;
-    gap: 2%;
+        width: 100%;
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        gap: 2%;
     }
-
-
     /* 左右双栏布局 */
     .content {
-    display: grid;
-    grid-template-columns: 70% 28%;
+        display: grid;
+        grid-template-columns: 70% 28%;
     }
     .left {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    position: relative;
-    z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        position: relative;
+        z-index: 1;
     }
     .right {
-    position: relative;
-    z-index: 1;
+        position: relative;
+        z-index: 1;
     }
 
     /* 帖子主体卡片 毛玻璃二次元 */
     .post {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: all 0.3s ease;
     }
     .post:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 40px rgba(255, 154, 158, 0.2);
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(255, 154, 158, 0.2);
     }
 
     /* 作者信息 */
     .personal-info {
-    font-size: 18px;
-    font-weight: bold;
-    color: #fbc2eb;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 18px;
+        font-weight: bold;
+        color: #fbc2eb;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     /* 帖子标题+内容 */
@@ -371,163 +408,216 @@
         color: rgba(212, 199, 199, 0.95);
     }
     .post_title {
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     /* 帖子底部信息 */
     .post-info {
-    padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction:row;
+        justify-content: space-between;
+        gap: 15px;
+    }
+    .post_foot_message_right{
+        display: flex;
+        gap: 10px;
+        flex-direction: column;
     }
     .stats {
-    display: flex;
-    gap: 25px;
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        gap: 25px;
+        font-size: 15px;
+        color: rgba(3, 0, 0, 0.8);
+        margin-top: 20px;
     }
 
     /* 通用按钮 二次元渐变霓虹 */
     .btn {
-    padding: 10px 25px;
-    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
-    border: none;
-    border-radius: 25px;
-    color: #fff;
-    font-size: 15px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+        padding: 10px 25px;
+        color: rgba(191, 166, 166, 0.9);
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(103, 98, 98, 0.4);
+        border: 1px solid rgba(220, 191, 191, 0.5);
+        background: rgba(179, 174, 174, 0.12);
+        color: rgba(191, 166, 166, 0.9);
+        border-radius: 25px;
+        cursor: pointer;
     }
     .btn:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(255, 154, 158, 0.6);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(226, 168, 170, 0.6);
     }
     .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
     }
 
     /* 评论区域卡片 */
     .comments {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     /* 回复提示条 */
     .replying {
-    background: rgba(255, 154, 158, 0.2);
-    padding: 10px 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+        background: rgba(255, 154, 158, 0.2);
+        padding: 10px 15px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     .link {
-    color: #ffc2d1;
-    background: none;
-    border: none;
-    cursor: pointer;
+        color: #ffc2d1;
+        background: none;
+        border: none;
+        cursor: pointer;
     }
 
     /* 评论输入框 */
     .post-comment {
-    width: 100%;
-    min-height: 120px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
-    padding: 15px;
-    color: #fff;
-    font-size: 15px;
-    resize: vertical;
-    outline: none;
-    margin-bottom: 15px;
-    transition: all 0.3s;
+        width: 100%;
+        min-height: 120px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        padding: 15px;
+        color: #fff;
+        font-size: 15px;
+        resize: vertical;
+        outline: none;
+        margin-bottom: 15px;
+        transition: all 0.3s;
     }
     .post-comment:focus {
-    border-color: #ff9a9e;
-    box-shadow: 0 0 15px rgba(255, 154, 158, 0.3);
+        border-color: #ff9a9e;
+        box-shadow: 0 0 15px rgba(255, 154, 158, 0.3);
     }
 
-    /* 单条评论 */
+    /* 单条评论：左右两块，空间不够时允许换行 */
     .comment {
-    padding: 15px;
-    margin-top: 15px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+
+        flex-wrap: wrap; /* ✅ 关键：窄屏不够就换行，避免挤成一条 */
+    }
+
+    /* 左侧信息：占满剩余空间 */
+    .comment_foot_left {
+        flex: 1 1 420px;   /* ✅ 有空间就扩展，没空间就缩 */
+        min-width: 240px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* 右侧按钮：独立一列，靠右，允许内部按钮换行 */
+    .comment_foot_right {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column; /* ✅ 右侧按钮竖排，更像“右边是按钮区” */
+        gap: 10px;
+        align-items: flex-end;
+        margin-left: auto;
+        margin-top: 50px;
+    }
+
+    .comment .btn{
+        padding: 8px 14px;
+        font-size: 14px;
     }
     .comment-author {
-    font-weight: 600;
-    color: #fbc2eb;
-    margin-bottom: 8px;
+        font-weight: 600;
+        color: #fbc2eb;
+        margin-bottom: 8px;
     }
     .comment-content {
-    line-height: 1.7;
-    margin-bottom: 10px;
+        color: rgba(212, 170, 194, 0.95);
+        line-height: 1.7;
+        margin-bottom: 10px;
     }
-    .comment-info {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+
+    .reply-to-comment {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        flex-wrap: wrap; /* 回复按钮多了也不怕，自动换行 */
     }
+
+    /*点赞数等底部小字*/
+
+    .small-info {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
 
     /* 右侧侧边栏卡片 */
     .sidecard {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
-    padding: 25px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.15);
     }
     .sidetitle {
-    font-size: 20px;
-    margin-bottom: 20px;
-    background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+        font-size: 20px;
+        margin-bottom: 20px;
+        background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     /* 相关帖子列表 */
     .related-item {
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
     }
     .related-item:hover {
-    background: rgba(255, 154, 158, 0.15);
-    transform: translateX(5px);
+        background: rgba(255, 154, 158, 0.15);
+        transform: translateX(5px);
     }
     .r-title {
-    margin-bottom: 6px;
-    font-weight: 500;
+        margin-bottom: 6px;
+        font-weight: 500;
     }
     .r-meta {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
-    display: flex;
-    gap: 6px;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.6);
+        display: flex;
+        gap: 6px;
     }
 
     .muted {
-    color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.5);
     }
     .err{
         color: #ff7878
