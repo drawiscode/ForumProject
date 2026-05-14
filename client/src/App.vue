@@ -2,19 +2,25 @@
   <div class="app-shell">
     <!-- 樱花全屏画布，全局常驻 -->
     <canvas id="sakuraCanvas"></canvas>
-    
+
+    <!-- 全局通用导航栏：所有页面显示（登录/注册页自动简化第三栏） -->
     <Navbar />
+
     <main class="main">
       <div class="content">
+        <!-- ✅ 必须保留：页面内容注入点 -->
         <router-view />
       </div>
     </main>
+
+    <!-- ✅ 全局结尾栏：所有页面都显示（含登录/注册） -->
+    <FooterBar />
   </div>
 </template>
 
-
 <script setup>
   import Navbar from './components/Navbar.vue'
+  import FooterBar from './components/FooterBar.vue'
   import { onMounted, onUnmounted } from 'vue'
 
   let animationId
@@ -44,7 +50,6 @@
 
     // ========= (1) 樱花：更像花瓣/花朵 5瓣 =========
     function drawPetalFlower(ctx, size) {
-      // 画一个“花朵”轮廓 5瓣 ,用二次贝塞尔做圆润花瓣
       ctx.beginPath()
       const petals = 5
       const r1 = 0.55 * size
@@ -74,7 +79,7 @@
       reset(initial = false) {
         this.x = Math.random() * canvas.width
         this.y = initial ? Math.random() * canvas.height : -20
-        this.size = Math.random() * 6 + 6 // 更大一点像花
+        this.size = Math.random() * 6 + 6
         this.vx = Math.random() * 0.8 - 0.4
         this.vy = Math.random() * 1.2 + 0.8
         this.opacity = Math.random() * 0.35 + 0.35
@@ -82,10 +87,9 @@
         this.rotSpeed = (Math.random() * 2 - 1) * 0.015
         this.wobble = Math.random() * 2 * Math.PI
         this.wobbleSpeed = Math.random() * 0.02 + 0.006
-        this.tint = Math.random() // 0..1 颜色微差
+        this.tint = Math.random()
       }
       update() {
-        // 鼠标轻微“推开”效果（更柔和）
         if (mouse.x != null && mouse.y != null) {
           const dx = this.x - mouse.x
           const dy = this.y - mouse.y
@@ -100,7 +104,6 @@
         this.wobble += this.wobbleSpeed
         const drift = Math.sin(this.wobble) * 0.55
 
-        // 阻尼，让速度别越推越快
         this.vx *= 0.985
         this.vy = Math.min(this.vy * 0.999 + 0.0008, 2.2)
 
@@ -108,7 +111,6 @@
         this.y += this.vy
         this.rot += this.rotSpeed
 
-        // 边界重置
         if (this.y > canvas.height + 30 || this.x < -60 || this.x > canvas.width + 60) {
           this.reset(false)
         }
@@ -119,7 +121,6 @@
         ctx.rotate(this.rot)
         ctx.globalAlpha = this.opacity
 
-        // 花瓣渐变（浅粉 -> 深粉）
         const g = ctx.createRadialGradient(0, 0, 1, 0, 0, this.size * 1.2)
         const c1 = `rgba(255, 214, 229, ${0.95})`
         const c2 = `rgba(255, 156, 186, ${0.92})`
@@ -132,7 +133,6 @@
         drawPetalFlower(ctx, this.size)
         ctx.fill()
 
-        // 花心
         ctx.globalAlpha = this.opacity * 0.85
         ctx.fillStyle = 'rgba(255, 240, 248, 0.9)'
         ctx.beginPath()
@@ -179,7 +179,6 @@
       const y = e.clientY
       const text = phrases[Math.floor(Math.random() * phrases.length)]
 
-      // 随机方向和距离（四面八方）
       const angle = Math.random() * Math.PI * 2
       const dist = 90 + Math.random() * 140
       const dx = Math.round(Math.cos(angle) * dist)
@@ -210,7 +209,6 @@
       const dy = e.clientY - lastY
       const dist = Math.hypot(dx, dy)
 
-      // ✅ 限制频率 + 必须移动够远才生成
       if (now - lastTrailT < 55) return
       if (dist < 18) return
 
@@ -238,135 +236,108 @@
 </script>
 
 <style>
-  /* 全局样式 不加 scoped所有页面继承 */
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root{
+    --pink-1: #ff6b9e;
+    --pink-2: #ff4f88;
+    --pink-3: #ff9fc0;
+    --bg-1: #fff5f8;
+    --bg-2: #ffe7f0;
+    --bg-3: #fff0f6;
+
+    --text: #2e2a33;
+    --muted: #7b6a78;
+    --card: #ffffff;
+    --border: rgba(255, 107, 158, 0.35);
+    --shadow: 0 18px 50px rgba(255, 79, 136, 0.14);
   }
 
-  .app-shell{ 
+  body{
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+
+  .app-shell{
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    box-sizing: border-box;
-    /* 全局渐变星空背景 所有页面通用 */
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    background-size: 400% 400%;
-    animation: gradientBg 15s ease infinite;
+
+    /* ✅ 淡粉渐变背景 */
+    background:
+      radial-gradient(1200px 520px at 20% 10%, rgba(255, 214, 229, 0.75), transparent 60%),
+      radial-gradient(900px 460px at 85% 25%, rgba(255, 179, 206, 0.55), transparent 60%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
+    background-attachment: fixed;
     position: relative;
   }
 
-  /* 樱花画布 全局置顶底层 */
-  #sakuraCanvas {
+  #sakuraCanvas{
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     z-index: 0;
     pointer-events: none;
+    opacity: 0.85;
+    filter: saturate(1.05) brightness(1.02);
   }
 
   .main{
     display: flex;
-    flex:1;
-    padding: 18px 14px 40px;
+    flex: 1;
+    padding: 18px 12px 10px;
     position: relative;
-    z-index: 1; /* 内容在樱花上面 */
+    z-index: 1;
   }
 
   .content{
     flex: 1;
-    display: flex;
-    box-sizing: border-box;
+    width: 100%;
     position: relative;
     z-index: 1;
-    width: 100%;
   }
 
-  /* 背景流动动画 */
-  @keyframes gradientBg {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
-    /* 点击文字飘动、模糊、消失 */
+  /* 点击文字/拖尾保持，颜色已适配浅粉背景 */
   .burstText{
     position: fixed;
-    left: 0;
-    top: 0;
+    left: 0; top: 0;
     transform: translate(-50%,-50%);
-    font-size: 20px;
-    font-weight: 800;
-    color: rgba(255, 196, 214, 0.95);
-    text-shadow: 0 0 10px rgba(255, 102, 153, 0.45);
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: .2px;
+    color: rgba(255, 79, 136, 0.92);
+    text-shadow: 0 10px 24px rgba(255, 79, 136, 0.22);
     pointer-events: none;
     z-index: 9999;
-    
     will-change: transform, opacity, filter;
-    filter: blur(0px);
     animation: burstFloat 2.2s cubic-bezier(.2,.8,.2,1) forwards;
     white-space: nowrap;
   }
 
-  /* 鼠标拖尾：更柔和的位移 + 逐渐模糊和透明 */
   .trail{
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 7px;
-    height: 7px;
+    left: 0; top: 0;
+    width: 7px; height: 7px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(224,179,255,0.7) 60%, rgba(255,154,158,0.25));
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.98), rgba(255, 159, 192, 0.75) 60%, rgba(255, 79, 136, 0.18));
     transform: translate(-50%,-50%);
     pointer-events: none;
     z-index: 9998;
     will-change: transform, opacity, filter;
-    filter: blur(0px);
     animation: tailFade 0.9s ease-out forwards;
   }
 
-  /* ✅ 用 CSS 变量控制随机位移/旋转 */
   @keyframes burstFloat {
-    0% {
-      transform: translate(-50%,-50%) scale(1) rotate(0deg);
-      opacity: 1;
-      filter: blur(0px);
-    }
-    45% {
-      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.08) rotate(var(--rot));
-      opacity: 0.92;
-      filter: blur(1.3px);
-    }
-    100% {
-      transform: translate(calc(-50% + var(--dx) * 1.18), calc(-50% + var(--dy) * 1.18)) scale(0.72) rotate(calc(var(--rot) * 1.35));
-      opacity: 0;
-      filter: blur(6px);
-    }
+    0% { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; filter: blur(0px); }
+    45% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.06) rotate(var(--rot)); opacity: 0.92; filter: blur(1.1px); }
+    100% { transform: translate(calc(-50% + var(--dx) * 1.18), calc(-50% + var(--dy) * 1.18)) scale(0.72) rotate(calc(var(--rot) * 1.35)); opacity: 0; filter: blur(6px); }
   }
 
-  /* 拖尾关键帧：轻微上移、缩小并模糊消失 */
   @keyframes tailFade {
-    0%{
-      opacity: 1;
-      transform: translate(-50%,-50%) scale(1) translateY(0);
-      filter: blur(0px);
-    }
-    50%{
-      opacity: 0.6;
-      transform: translate(-50%,-50%) scale(0.8) translateY(-8px);
-      filter: blur(2px);
-    }
-    100%{
-      opacity: 0;
-      transform: translate(-50%,-50%) scale(0.2) translateY(-20px);
-      filter: blur(6px);
-    }
+    0% { opacity: 1; transform: translate(-50%,-50%) scale(1) translateY(0); filter: blur(0px); }
+    50% { opacity: 0.6; transform: translate(-50%,-50%) scale(0.82) translateY(-8px); filter: blur(2px); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.2) translateY(-20px); filter: blur(6px); }
   }
 </style>
-
-
-
-

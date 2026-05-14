@@ -2,30 +2,14 @@ const express = require('express')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const { pool } = require('../db')
+const { requireAuth } = require('../middleware/auth')
+const { POINTS, addPoints } = require('../services/points')
 const path =require('path')
 const fs = require('fs')
 const multer = require('multer')
 
 
 const router = express.Router()
-
-async function requireAuth(req, res, next) {
-  try {
-    const userId = Number(req.header('x-user-id'))
-    if (!userId) return res.status(401).json({ ok: false, message: 'not logged in' })
-
-    const [rows] = await pool.query(
-      'SELECT id, username, avatar_url  FROM users WHERE id = ? LIMIT 1',
-      [userId]
-    )
-    if (rows.length === 0) return res.status(401).json({ ok: false, message: 'invalid user' })
-
-    req.user = rows[0]
-    next()
-  } catch (err) {
-    res.status(500).json({ ok: false, message: err.message })
-  }
-}
 
 function isEmail(str) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(str || '').trim())
@@ -37,6 +21,40 @@ function sha256(s) {
 }
 function makeToken() {
   return crypto.randomBytes(24).toString('hex')
+}
+
+async function logLogin(req, userId, success) {
+  try {
+    const ip = req.ip || req.headers['x-forwarded-for'] || null
+    const ua = String(req.headers['user-agent'] || '')
+    await pool.query(
+      'INSERT INTO login_logs (user_id, ip, user_agent, success) VALUES (?, ?, ?, ?)',
+      [userId || null, ip, ua.slice(0, 255), success ? 1 : 0]
+    )
+  } catch {
+    // ignore logging errors
+  }
+}
+
+async function ensureBanAppealsTable() {
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS user_unban_appeals (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      message VARCHAR(500) NOT NULL,
+      status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+      handled_by BIGINT UNSIGNED NULL,
+      handled_note VARCHAR(300) NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      handled_at DATETIME NULL,
+      CONSTRAINT fk_unban_appeals_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      CONSTRAINT fk_unban_appeals_admin FOREIGN KEY (handled_by) REFERENCES admin_users(id) ON DELETE SET NULL,
+      INDEX idx_unban_appeals_user (user_id),
+      INDEX idx_unban_appeals_status (status)
+    ) ENGINE=InnoDB
+    `
+  )
 }
 
 
@@ -198,7 +216,7 @@ router.get('/:id/public', async (req, res) => {
     const [rows] = await pool.query(
       `
       SELECT id, username, avatar_url, gender, bio, created_at,
-             fans_count, follow_count, allow_dm
+             fans_count, follow_count, allow_dm, points, level
       FROM users
       WHERE id = ? AND (public_profile = 1 OR public_profile IS NULL)
       LIMIT 1
@@ -260,7 +278,7 @@ router.get('/me', requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, username, role, created_at, avatar_url, gender, bio, public_profile, 
-      allow_dm, follow_count, fans_count 
+      allow_dm, follow_count, fans_count, points, level 
       FROM users WHERE id = ? LIMIT 1`,
       [req.user.id]
     )
@@ -268,6 +286,43 @@ router.get('/me', requireAuth, async (req, res) => {
     res.json({ ok: true, user: rows[0] })
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+// POST /api/user/checkin
+router.post('/checkin', requireAuth, async (req, res) => {
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    const [rows] = await conn.query(
+      'SELECT last_checkin_date FROM users WHERE id = ? FOR UPDATE',
+      [req.user.id]
+    )
+    if (rows.length === 0) {
+      await conn.rollback()
+      return res.status(404).json({ ok: false, message: 'user not found' })
+    }
+
+    const last = rows[0].last_checkin_date
+    const [todayRow] = await conn.query('SELECT CURDATE() AS today')
+    const today = todayRow?.[0]?.today
+
+    if (last && today && String(last) === String(today)) {
+      await conn.rollback()
+      return res.json({ ok: true, checked: false, message: 'already checked in today' })
+    }
+
+    await conn.query('UPDATE users SET last_checkin_date = CURDATE() WHERE id = ?', [req.user.id])
+    const result = await addPoints(conn, req.user.id, POINTS.checkin)
+
+    await conn.commit()
+    return res.json({ ok: true, checked: true, points: result?.points, level: result?.level })
+  } catch (err) {
+    try { await conn.rollback() } catch {}
+    return res.status(500).json({ ok: false, message: err.message })
+  } finally {
+    conn.release()
   }
 })
 
@@ -433,25 +488,109 @@ router.post('/login', async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      'SELECT id, username, email, password_hash, role FROM users WHERE username = ? OR email = ? LIMIT 1',
+      'SELECT id, username, email, password_hash, role, is_banned, banned_until, banned_reason, deleted_at FROM users WHERE username = ? OR email = ? LIMIT 1',
       [a, a.toLowerCase()]
     )
     if (rows.length === 0) {
+      await logLogin(req, null, false)
       return res.status(401).json({ ok: false, message: 'invalid credentials' })
     }
 
     const user = rows[0]
+    if (user.deleted_at) {
+      await logLogin(req, user.id, false)
+      return res.status(403).json({ ok: false, message: 'account deleted' })
+    }
+    if (Number(user.is_banned) === 1) {
+      const until = user.banned_until ? new Date(user.banned_until).getTime() : 0
+      if (!until || until > Date.now()) {
+        await logLogin(req, user.id, false)
+        return res.status(403).json({
+          ok: false,
+          message: '账号已经被禁用',
+          code: 'ACCOUNT_BANNED',
+          banned_reason: String(user.banned_reason || '').trim() || '账号因违反社区规范已被禁用，如有疑问可提交解除禁用申请。'
+        })
+      }
+    }
+
     const match = await bcrypt.compare(p, user.password_hash)
     if (!match) {
+      await logLogin(req, user.id, false)
       return res.status(401).json({ ok: false, message: 'invalid credentials' })
     }
 
+    //新增：查询是否是超级管理员
+    let isSuper = false
+    if (user.role === 'admin') {
+      const [adminRows] = await pool.query(
+        'SELECT a.is_active, r.role_key FROM admin_users a JOIN admin_roles r ON r.id = a.role_id WHERE a.user_id = ? LIMIT 1',
+        [user.id]
+      )
+      if (adminRows.length > 0) {
+        isSuper = adminRows[0].role_key === 'super' && Number(adminRows[0].is_active) === 1
+      }
+    }
+
+    await logLogin(req, user.id, true)
+
     return res.json({
       ok: true,
-      user: { id: user.id, username: user.username, email: user.email, role: user.role }
+      user: { id: user.id, username: user.username, email: user.email, role: user.role, is_super: isSuper }
     })
   } catch (err) {
     return res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+router.post('/ban-appeal', async (req, res) => {
+  try {
+    await ensureBanAppealsTable()
+
+    const account = String(req.body?.account || '').trim()
+    const message = String(req.body?.message || '').trim()
+    if (!account) {
+      return res.status(400).json({ ok: false, message: 'account required' })
+    }
+
+    const [rows] = await pool.query(
+      'SELECT id, is_banned, banned_until FROM users WHERE username = ? OR email = ? LIMIT 1',
+      [account, account.toLowerCase()]
+    )
+    if (rows.length === 0) {
+      return res.status(404).json({ ok: false, message: '未找到该账号' })
+    }
+
+    const user = rows[0]
+    const until = user.banned_until ? new Date(user.banned_until).getTime() : 0
+    const stillBanned = Number(user.is_banned) === 1 && (!until || until > Date.now())
+    if (!stillBanned) {
+      return res.status(400).json({ ok: false, message: '该账号当前未被禁用' })
+    }
+
+    const [exists] = await pool.query(
+      `
+      SELECT id
+      FROM user_unban_appeals
+      WHERE user_id = ? AND status = 'pending'
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+      [user.id]
+    )
+    if (exists.length > 0) {
+      return res.status(409).json({ ok: false, message: '已有待处理申请，请勿重复提交' })
+    }
+
+    const finalMessage = message || '我已了解社区规则，希望管理员审核后解除禁用，谢谢。'
+    await pool.query(
+      'INSERT INTO user_unban_appeals (user_id, message) VALUES (?, ?)',
+      [user.id, finalMessage]
+    )
+
+    res.json({ ok: true, message: '申诉已提交，请等待管理员处理' })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
   }
 })
 

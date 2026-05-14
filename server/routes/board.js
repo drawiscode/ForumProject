@@ -27,7 +27,7 @@ router.get('/:name/posts', async (req, res) => {
         u.username AS author
       FROM posts p
       JOIN users u ON u.id = p.user_id
-      WHERE p.deleted_at IS NULL
+      WHERE p.deleted_at IS NULL AND p.audit_status = 'approved' AND p.is_hidden = 0
         ${isAll ? '' : 'AND p.category = ?'}
       ORDER BY p.created_at DESC
       LIMIT 50

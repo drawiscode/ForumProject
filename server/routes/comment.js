@@ -19,24 +19,8 @@ PostDetail.vue：A 下面加“回复”+“查看回复(n)”按钮；回复时
 const express = require('express')
 const router = express.Router()
 const {pool} = require('../db')
-
-async function requireAuth(req,res,next){
-  try{
-    const userId = Number(req.header('x-user-id'))
-    if (!userId) return res.status(401).json({ ok: false, message: 'not logged in' })
-
-    const [rows] = await pool.query(
-      'SELECT id, username, role, avatar_url FROM users WHERE id = ? LIMIT 1',
-      [userId]
-    )
-    if (rows.length === 0) return res.status(401).json({ ok: false, message: 'invalid user' })
-
-    req.user = rows[0]
-    next()
-  } catch (err) {
-    res.status(500).json({ ok: false, message: err.message })
-  }
-}
+const { requireAuth } = require('../middleware/auth')
+const { POINTS, addPoints } = require('../services/points')
 
 
 // GET /api/comment/:postId
@@ -48,16 +32,27 @@ router.get('/:postId', async (req, res) => {
       const [rows] = await pool.query(
         `
         SELECT
-          c.id, c.post_id, c.user_id, c.content, c.likes_count, c.reply_count, c.created_at,
+          c.id, c.post_id, c.user_id, c.content, c.is_hidden, c.hidden_reason,
+          c.likes_count, c.reply_count, c.created_at,
           u.username AS author, u.avatar_url AS author_avatar_url
         FROM comments c
         JOIN users u ON u.id = c.user_id
         WHERE c.post_id = ? AND c.deleted_at IS NULL AND c.parent_comment_id IS NULL
+          AND c.audit_status = 'approved'
         ORDER BY c.created_at ASC
         `,
         [postId]
       )
-    res.json({ok:true, comments: rows})
+    const comments = rows.map((c) => {
+      if (Number(c.is_hidden) === 1) {
+        return {
+          ...c,
+          content: c.hidden_reason ? `该评论已被屏蔽：${c.hidden_reason}` : '该评论已被屏蔽'
+        }
+      }
+      return c
+    })
+    res.json({ok:true, comments})
   }catch(err){
     res.status(500).json({ ok: false, message: err.message })
   }
@@ -75,11 +70,13 @@ router.get('/thread/:aId', async (req, res) => {
     const [aRows] = await pool.query(
       `
       SELECT
-        c.id, c.post_id, c.user_id, c.content, c.likes_count, c.reply_count, c.created_at,
+        c.id, c.post_id, c.user_id, c.content, c.is_hidden, c.hidden_reason,
+        c.likes_count, c.reply_count, c.created_at,
         u.username AS author, u.avatar_url AS author_avatar_url
       FROM comments c
       JOIN users u ON u.id = c.user_id
       WHERE c.id = ? AND c.deleted_at IS NULL AND c.parent_comment_id IS NULL
+        AND c.audit_status = 'approved'
       LIMIT 1
       `,
       [aId]
@@ -90,17 +87,31 @@ router.get('/thread/:aId', async (req, res) => {
       `
       SELECT
         c.id, c.post_id, c.user_id, c.parent_comment_id, c.root_comment_id, c.dialog_comment_id,
-        c.content, c.likes_count, c.dialog_reply_count, c.created_at,
+        c.content, c.is_hidden, c.hidden_reason, c.likes_count, c.dialog_reply_count, c.created_at,
         u.username AS author, u.avatar_url AS author_avatar_url
       FROM comments c
       JOIN users u ON u.id = c.user_id
-      WHERE c.deleted_at IS NULL AND c.root_comment_id = ?
+      WHERE c.deleted_at IS NULL AND c.root_comment_id = ? AND c.audit_status = 'approved'
       ORDER BY c.created_at ASC
       `,
       [aId]
     )
+    const root = aRows[0]
+    if (Number(root.is_hidden) === 1) {
+      root.content = root.hidden_reason ? `该评论已被屏蔽：${root.hidden_reason}` : '该评论已被屏蔽'
+    }
 
-    res.json({ ok: true, comment: aRows[0], replies })
+    const safeReplies = replies.map((c) => {
+      if (Number(c.is_hidden) === 1) {
+        return {
+          ...c,
+          content: c.hidden_reason ? `该评论已被屏蔽：${c.hidden_reason}` : '该评论已被屏蔽'
+        }
+      }
+      return c
+    })
+
+    res.json({ ok: true, comment: root, replies: safeReplies })
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message })
   }
@@ -120,11 +131,12 @@ router.get('/dialog/:bId', async (req, res) => {
       `
       SELECT
         c.id, c.post_id, c.user_id, c.parent_comment_id, c.root_comment_id, c.dialog_comment_id,
-        c.content, c.likes_count, c.dialog_reply_count, c.created_at,
+        c.content, c.is_hidden, c.hidden_reason, c.likes_count, c.dialog_reply_count, c.created_at,
         u.username AS author, u.avatar_url AS author_avatar_url
       FROM comments c
       JOIN users u ON u.id = c.user_id
       WHERE c.id = ? AND c.deleted_at IS NULL AND c.dialog_comment_id = c.id
+        AND c.audit_status = 'approved'
       LIMIT 1
       `,
       [bId]
@@ -137,17 +149,31 @@ router.get('/dialog/:bId', async (req, res) => {
       `
       SELECT
         c.id, c.post_id, c.user_id, c.parent_comment_id, c.root_comment_id, c.dialog_comment_id,
-        c.content, c.likes_count, c.created_at,
+        c.content, c.is_hidden, c.hidden_reason, c.likes_count, c.created_at,
         u.username AS author, u.avatar_url AS author_avatar_url
       FROM comments c
       JOIN users u ON u.id = c.user_id
       WHERE c.deleted_at IS NULL AND c.dialog_comment_id = ? AND c.id <> ?
+        AND c.audit_status = 'approved'
       ORDER BY c.created_at ASC
       `,
       [bId, bId]
     )
+    if (Number(b.is_hidden) === 1) {
+      b.content = b.hidden_reason ? `该评论已被屏蔽：${b.hidden_reason}` : '该评论已被屏蔽'
+    }
 
-    res.json({ ok: true, comment: b, replies: cs })
+    const safeCs = cs.map((c) => {
+      if (Number(c.is_hidden) === 1) {
+        return {
+          ...c,
+          content: c.hidden_reason ? `该评论已被屏蔽：${c.hidden_reason}` : '该评论已被屏蔽'
+        }
+      }
+      return c
+    })
+
+    res.json({ ok: true, comment: b, replies: safeCs })
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message })
   }
@@ -237,6 +263,8 @@ router.post('/:postId', requireAuth,async (req, res) => {
       await conn.query('UPDATE comments SET reply_count = reply_count + 1 WHERE id = ?', [root_comment_id])
       await conn.query('UPDATE comments SET dialog_reply_count = dialog_reply_count + 1 WHERE id = ?', [dialog_comment_id])
     }
+
+    await addPoints(conn, req.user.id, POINTS.comment)
 
     await conn.commit()
     res.status(201).json({ ok: true, id: newId })

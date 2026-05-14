@@ -19,6 +19,8 @@
             <span>关注{{ user.follow_count ?? 0}}</span>
             <span>.</span>
             <span>粉丝{{ user.fans_count ?? 0}}</span>  
+                        <span>.</span>
+                        <span>Lv{{ user.level || 1 }}</span>
           </div>
         </div>
 
@@ -36,6 +38,7 @@
 
       <div class="row"><b>性别：</b>{{ genderText(user.gender) }}</div>
       <div class="row"><b>简介：</b>{{ user.bio || '暂无简介' }}</div>
+    <div class="row"><b>积分：</b>{{ user.points || 0 }}</div>
       <div class="row"><b>注册：</b>{{ formatTime(user.created_at) }}</div>
     
     <!-- 简易私信输入框 -->

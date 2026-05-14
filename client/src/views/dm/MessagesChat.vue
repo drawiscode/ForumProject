@@ -283,13 +283,12 @@
         position: relative; z-index: 1; 
     }
     .card{
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(255, 79, 136, 0.22);
+        box-shadow: 0 18px 54px rgba(255, 79, 136, 0.12);
+        border-radius: 26px;
         padding: 14px;
-        color: rgba(255,255,255,0.9);
+        color: rgba(46, 42, 51, 0.92);
     }
 
     .bar{ 
@@ -299,7 +298,7 @@
      }
     .title{
         font-weight: 900;
-        background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+        background: linear-gradient(135deg, #ff4f88, #ff6b9e, #ff9fc0);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
@@ -307,19 +306,19 @@
 
     .link{
         border:0; background:transparent; cursor:pointer; padding: 6px 8px;
-        color: rgba(255, 196, 214, 0.95);
+        color: rgba(255, 79, 136, 0.95);
         font-weight: 800;
         border-radius: 999px;
     }
-    .link:hover{ background: rgba(255,255,255,0.10); }
+    .link:hover{ background: rgba(255, 107, 158, 0.12); }
 
     .chat{
         height: min(62vh, 520px);
         overflow: auto;
         padding: 10px;
         border-radius: 16px;
-        background: rgba(0,0,0,0.12);
-        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(255, 107, 158, 0.06);
+        border: 1px solid rgba(255, 79, 136, 0.12);
     }
 
     .msg{
@@ -338,7 +337,7 @@
         height: 36px;
         border-radius: 999px;
         object-fit: cover;
-        border: 2px solid rgba(255,255,255,0.25);
+        border: 2px solid rgba(255, 79, 136, 0.18);
     }
     .avatar.placeholder{
         width: 36px;
@@ -349,9 +348,9 @@
         justify-content:center;
         font-weight: 900;
         font-size: 12px;
-        background: rgba(255,255,255,0.10);
-        border: 2px solid rgba(255,255,255,0.16);
-        color: rgba(255,255,255,0.9);
+        background: rgba(255, 107, 158, 0.12);
+        border: 2px dashed rgba(255, 79, 136, 0.22);
+        color: rgba(255, 79, 136, 0.95);
     }
 
     .body{
@@ -366,7 +365,7 @@
 
     .nameLine{
         font-size: 12px;
-        opacity: .75;
+        color: rgba(123, 106, 120, 0.75);
         margin: 2px 0 6px;
     }
 
@@ -375,12 +374,12 @@
         max-width: 100%;
         padding: 10px 12px;
         border-radius: 16px;
-        background: rgba(255,255,255,0.10);
-        border: 1px solid rgba(255,255,255,0.14);
+        background: #fff;
+        border: 1px solid rgba(255, 79, 136, 0.12);
     }
     .msg.me .bubble{
-        background: rgba(255,154,158,0.18);
-        border-color: rgba(255,154,158,0.25);
+        background: rgba(255, 107, 158, 0.12);
+        border-color: rgba(255, 79, 136, 0.22);
     }
 
     .text{ 
@@ -389,7 +388,7 @@
      }
     .time{
         margin-top: 6px; 
-        font-size: 12px; opacity: .7; 
+        font-size: 12px; color: rgba(123, 106, 120, 0.75); font-weight: 700; 
      }
 
     .composer{
@@ -405,15 +404,15 @@
         max-height: 140px;
         resize: vertical;
         border-radius: 14px;
-        border: 1px solid rgba(255,255,255,0.18);
-        background: rgba(0,0,0,0.18);
-        color: rgba(255,255,255,0.92);
+        border: 1px solid rgba(255, 79, 136, 0.18);
+        background: #fff;
+        color: rgba(46, 42, 51, 0.92);
         padding: 10px 12px;
         outline: none;
     }
     .ta:focus{
-        border-color: rgba(255,154,158,0.55);
-        box-shadow: 0 0 0 3px rgba(255,154,158,0.18);
+        border-color: rgba(255, 79, 136, 0.4);
+        box-shadow: 0 0 0 3px rgba(255, 79, 136, 0.08);
     }
 
     .btn{
@@ -422,20 +421,20 @@
         border-radius: 999px;
         cursor: pointer;
         color: #fff;
-        background: linear-gradient(45deg, #ff9a9e, #fad0c4);
-        box-shadow: 0 10px 24px rgba(255,154,158,0.18);
+        background: linear-gradient(135deg, rgba(255, 79, 136, 0.95), rgba(255, 107, 158, 0.95));
+        box-shadow: 0 10px 24px rgba(255, 79, 136, 0.14);
     }
     .btn:disabled{ 
         opacity: .6; 
         cursor: not-allowed; 
     }
 
-    .muted{ opacity: .75; }
+    .muted{ color: rgba(123, 106, 120, 0.85); font-weight: 700; }
     .small{ 
         margin-top: 8px; 
         font-size: 12px; 
     }
-    .err{ color: #ff7878; }
+    .err{ color: #ff3b77; font-weight: 800; }
 
     .emojiWrap{ position: relative; }
 
@@ -443,14 +442,14 @@
         width: 42px;
         height: 42px;
         border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.18);
-        background: rgba(0,0,0,0.18);
-        color: rgba(255,255,255,0.92);
+        border: 1px solid rgba(255, 79, 136, 0.18);
+        background: #fff;
+        color: rgba(255, 79, 136, 0.95);
         cursor: pointer;
     }
 
     .emojiBtn:hover{ 
-        background: rgba(255,154,158,0.14); 
+        background: rgba(255, 107, 158, 0.12); 
     }
 
     .emojiPanel{
@@ -460,9 +459,9 @@
         width: 240px;
         padding: 10px;
         border-radius: 14px;
-        background: rgba(20, 22, 36, 0.92);
-        border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+        background: #fff;
+        border: 1px solid rgba(255, 79, 136, 0.18);
+        box-shadow: 0 18px 40px rgba(255, 79, 136, 0.14);
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
@@ -472,12 +471,12 @@
         width: 34px;
         height: 34px;
         border-radius: 10px;
-        border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255, 79, 136, 0.12);
+        background: rgba(255, 107, 158, 0.06);
         cursor: pointer;
     }
     
     .emoji:hover{ 
-        background: rgba(255,154,158,0.18);    
+        background: rgba(255, 107, 158, 0.14);    
     }
 </style>

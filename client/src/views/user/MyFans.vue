@@ -57,43 +57,50 @@
 
     .wrap{ width: min(900px, 96%); margin: 18px auto 0; padding: 16px; position: relative; z-index: 1; }
     .card{
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border-radius: 20px;
-    padding: 16px;
-    color: rgba(255,255,255,0.9);
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border-radius: 20px;
+        padding: 16px;
+        color: rgba(255,255,255,0.9);
     }
     .title{
-    font-size: 20px;
-    font-weight: 900;
-    margin: 8px 0 12px;
-    background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+        font-size: 20px;
+        font-weight: 900;
+        margin: 8px 0 12px;
+        background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     .link{
-    border:0; background:transparent; cursor:pointer; padding:0;
-    color: rgba(255, 196, 214, 0.95);
-    font-weight: 800;
-    text-decoration: underline;
-    text-underline-offset: 4px;
+        border:0; background:transparent; cursor:pointer; padding:0;
+        color: rgba(220, 141, 165, 0.95);
+        font-weight: 800;
+        text-decoration: underline;
+        text-underline-offset: 4px;
     }
     .list{ display:flex; flex-direction:column; gap: 10px; }
     .item{
-    display:flex; align-items:center; gap: 10px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(0,0,0,0.16);
-    border: 1px solid rgba(255,255,255,0.10);
-    cursor: pointer;
+        display:flex; align-items:center; gap: 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 231, 237, 0.86);
+        border: 1px solid rgba(106, 101, 101, 0.3);
+        cursor: pointer;
     }
     .item:hover{ background: rgba(255,154,158,0.12); }
     .avatar{ width: 42px; height: 42px; border-radius: 999px; object-fit: cover; border: 2px solid rgba(255,255,255,0.30); }
     .avatar.placeholder{ background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.16); }
-    .name{ font-weight: 900; }
-    .sub{ font-size: 12px; opacity: .75; }
+    .name{ 
+        font-weight: 900; 
+        color: rgba(155, 92, 113, 0.95);
+    }
+    .sub{ 
+        font-size: 12px; 
+        opacity: .75; 
+        color: rgba(119, 78, 92, 0.75);
+    }
     .muted{ opacity: .75; }
     .err{ color: #ff7878; }
 </style>

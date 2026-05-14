@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   role         ENUM('user','admin') NOT NULL DEFAULT 'user',
 
+  points       INT UNSIGNED NOT NULL DEFAULT 0,
+  level        INT UNSIGNED NOT NULL DEFAULT 1,
+  last_checkin_date DATE NULL,
+
   fans_count INT UNSIGNED NOT NULL DEFAULT 0,
   follow_count INT UNSIGNED NOT NULL DEFAULT 0,
 
@@ -28,6 +32,12 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE users
   ADD COLUMN fans_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER role,
   ADD COLUMN follow_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER fans_count;
+
+-- 积分与等级
+ALTER TABLE users
+  ADD COLUMN points INT UNSIGNED NOT NULL DEFAULT 0 AFTER role,
+  ADD COLUMN level INT UNSIGNED NOT NULL DEFAULT 1 AFTER points,
+  ADD COLUMN last_checkin_date DATE NULL AFTER level;
 
 -- 帖子表
 CREATE TABLE IF NOT EXISTS posts (
@@ -44,6 +54,7 @@ CREATE TABLE IF NOT EXISTS posts (
 
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  last_edited_at TIMESTAMP NULL DEFAULT NULL,
   deleted_at   TIMESTAMP NULL DEFAULT NULL,
 
   INDEX idx_posts_created_at (created_at),
@@ -53,11 +64,27 @@ CREATE TABLE IF NOT EXISTS posts (
     ON UPDATE CASCADE
     ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+
+-- 帖子向量表（用于语义检索的最小存储）
+CREATE TABLE IF NOT EXISTS post_embeddings (
+  post_id    BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  model      VARCHAR(80) NOT NULL,
+  embedding  JSON NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_post_embeddings_post
+    FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
 ALTER TABLE posts
   ADD COLUMN likes_count    INT UNSIGNED NOT NULL DEFAULT 0 AFTER category,
   ADD COLUMN replies_count  INT UNSIGNED NOT NULL DEFAULT 0 AFTER likes_count,
   ADD COLUMN views_count    INT UNSIGNED NOT NULL DEFAULT 0 AFTER replies_count,
   ADD COLUMN favorites_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER views_count;
+
+ALTER TABLE posts
+  ADD COLUMN last_edited_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;
 
 SHOW COLUMNS FROM posts;
 
@@ -268,3 +295,178 @@ CREATE TABLE IF NOT EXISTS password_resets (
   INDEX idx_email (email),
   INDEX idx_user (user_id)
 );
+
+-- =============================
+-- 管理员模块（权限/日志/板块/审核）
+-- =============================
+
+-- 用户禁用/删除标记
+ALTER TABLE users
+  ADD COLUMN is_banned TINYINT(1) NOT NULL DEFAULT 0 AFTER role,
+  ADD COLUMN banned_until DATETIME NULL AFTER is_banned,
+  ADD COLUMN banned_reason VARCHAR(200) NULL AFTER banned_until,
+  ADD COLUMN deleted_at DATETIME NULL AFTER banned_reason;
+
+-- 帖子审核/置顶/加精/屏蔽
+ALTER TABLE posts
+  ADD COLUMN is_pinned TINYINT(1) NOT NULL DEFAULT 0 AFTER favorites_count,
+  ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER is_pinned,
+  ADD COLUMN is_hidden TINYINT(1) NOT NULL DEFAULT 0 AFTER is_featured,
+  ADD COLUMN hidden_reason VARCHAR(200) NULL AFTER is_hidden,
+  ADD COLUMN audit_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved' AFTER hidden_reason,
+  ADD COLUMN audit_reason VARCHAR(200) NULL AFTER audit_status,
+  ADD COLUMN audited_by BIGINT UNSIGNED NULL AFTER audit_reason,
+  ADD COLUMN audited_at DATETIME NULL AFTER audited_by;
+
+-- 评论审核/屏蔽
+ALTER TABLE comments
+  ADD COLUMN is_hidden TINYINT(1) NOT NULL DEFAULT 0 AFTER content,
+  ADD COLUMN hidden_reason VARCHAR(200) NULL AFTER is_hidden,
+  ADD COLUMN audit_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved' AFTER hidden_reason,
+  ADD COLUMN audit_reason VARCHAR(200) NULL AFTER audit_status,
+  ADD COLUMN audited_by BIGINT UNSIGNED NULL AFTER audit_reason,
+  ADD COLUMN audited_at DATETIME NULL AFTER audited_by;
+
+-- 板块表（独立于 posts.category）
+CREATE TABLE IF NOT EXISTS boards (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  description VARCHAR(200) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_hidden TINYINT(1) NOT NULL DEFAULT 0,
+  allow_post TINYINT(1) NOT NULL DEFAULT 1,
+  allow_reply TINYINT(1) NOT NULL DEFAULT 1,
+  min_role ENUM('user','admin') NOT NULL DEFAULT 'user',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 管理员角色表
+CREATE TABLE IF NOT EXISTS admin_roles (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  role_key ENUM('super','normal') NOT NULL UNIQUE,
+  name VARCHAR(50) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 管理员账号表（与 users 关联）
+CREATE TABLE IF NOT EXISTS admin_users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+  role_id BIGINT UNSIGNED NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_admin_users_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+
+  CONSTRAINT fk_admin_users_role
+    FOREIGN KEY (role_id) REFERENCES admin_roles(id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 权限表
+CREATE TABLE IF NOT EXISTS admin_permissions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  perm_key VARCHAR(80) NOT NULL UNIQUE,
+  label VARCHAR(120) NOT NULL
+) ENGINE=InnoDB;
+
+-- 角色权限（默认权限）
+CREATE TABLE IF NOT EXISTS admin_role_permissions (
+  role_id BIGINT UNSIGNED NOT NULL,
+  permission_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (role_id, permission_id),
+  CONSTRAINT fk_role_perm_role FOREIGN KEY (role_id) REFERENCES admin_roles(id) ON DELETE CASCADE,
+  CONSTRAINT fk_role_perm_perm FOREIGN KEY (permission_id) REFERENCES admin_permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 管理员个人权限（可覆盖角色默认）
+CREATE TABLE IF NOT EXISTS admin_user_permissions (
+  admin_user_id BIGINT UNSIGNED NOT NULL,
+  permission_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (admin_user_id, permission_id),
+  CONSTRAINT fk_user_perm_admin FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_user_perm_perm FOREIGN KEY (permission_id) REFERENCES admin_permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 管理员操作日志
+CREATE TABLE IF NOT EXISTS admin_action_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  admin_user_id BIGINT UNSIGNED NOT NULL,
+  action VARCHAR(100) NOT NULL,
+  target_type VARCHAR(40) NOT NULL,
+  target_id BIGINT UNSIGNED NULL,
+  detail TEXT NULL,
+  ip VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_admin_logs_admin FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 用户违规记录
+CREATE TABLE IF NOT EXISTS user_violation_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  admin_user_id BIGINT UNSIGNED NOT NULL,
+  action VARCHAR(80) NOT NULL,
+  reason VARCHAR(200) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_violation_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_violation_admin FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 用户解除禁用申请
+CREATE TABLE IF NOT EXISTS user_unban_appeals (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  message VARCHAR(500) NOT NULL,
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  handled_by BIGINT UNSIGNED NULL,
+  handled_note VARCHAR(300) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  handled_at DATETIME NULL,
+  CONSTRAINT fk_unban_appeals_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_unban_appeals_admin FOREIGN KEY (handled_by) REFERENCES admin_users(id) ON DELETE SET NULL,
+  INDEX idx_unban_appeals_user (user_id),
+  INDEX idx_unban_appeals_status (status)
+) ENGINE=InnoDB;
+
+-- 登录日志（包含管理员/普通用户）
+CREATE TABLE IF NOT EXISTS login_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NULL,
+  ip VARCHAR(64) NULL,
+  user_agent VARCHAR(255) NULL,
+  success TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_login_user (user_id)
+) ENGINE=InnoDB;
+
+-- 初始化基础角色（如果不存在）
+INSERT IGNORE INTO admin_roles (role_key, name) VALUES
+  ('super', '超级管理员'),
+  ('normal', '普通管理员');
+
+-- 初始化权限列表（可按需扩展）
+INSERT IGNORE INTO admin_permissions (perm_key, label) VALUES
+  ('user.view', '查看用户'),
+  ('user.ban', '禁用/解禁用户'),
+  ('user.role', '修改用户角色'),
+  ('user.delete', '删除用户'),
+  ('post.view', '查看帖子'),
+  ('post.delete', '删除帖子'),
+  ('post.pin', '置顶帖子'),
+  ('post.feature', '加精帖子'),
+  ('post.hide', '屏蔽帖子内容'),
+  ('comment.view', '查看评论'),
+  ('comment.delete', '删除评论'),
+  ('comment.hide', '屏蔽评论'),
+  ('board.manage', '板块管理'),
+  ('review.view', '查看待审核内容'),
+  ('review.approve', '通过审核'),
+  ('review.reject', '驳回审核'),
+  ('admin.manage', '管理员管理'),
+  ('logs.view', '查看系统日志');

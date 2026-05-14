@@ -1,21 +1,8 @@
 const express = require('express')
 const { pool } = require('../db')
+const { requireAuth } = require('../middleware/auth')
 
 const router = express.Router()
-
-async function requireAuth(req, res, next) {
-  try {
-    const userId = Number(req.header('x-user-id'))
-    if (!userId) return res.status(401).json({ ok: false, message: 'not logged in' })
-
-    const [rows] = await pool.query('SELECT id, username FROM users WHERE id = ? LIMIT 1', [userId])
-    if (rows.length === 0) return res.status(401).json({ ok: false, message: 'invalid user' })
-    req.user = rows[0]
-    next()
-  } catch (err) {
-    res.status(500).json({ ok: false, message: err.message })
-  }
-}
 
 
 //  会话列表：按对方聚合 + 最近一条消息

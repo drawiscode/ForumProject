@@ -12,6 +12,20 @@
         <p v-if="error" class="error">{{ error }}</p>
         <p v-if="okMsg" class="ok">{{ okMsg }}</p>
 
+        <div v-if="banInfo.show" class="banCard">
+          <div class="banTitle">账号已被禁用</div>
+          <div class="banReason">原因：{{ banInfo.reason }}</div>
+          <textarea
+            class="appealInput"
+            v-model.trim="appealMessage"
+            placeholder="可填写你的说明，申请管理员解除禁用"
+          ></textarea>
+          <button class="btn" type="button" :disabled="appealLoading" @click="submitAppeal">
+            {{ appealLoading ? '提交中...' : '提交解除禁用申请' }}
+          </button>
+          <p v-if="appealMsg" class="ok">{{ appealMsg }}</p>
+        </div>
+
         <div class="actions">
           <button class="btn" type="submit" :disabled="loading">
             {{ loading ? '登录中...' : '登录' }}
@@ -38,7 +52,11 @@
         form: { account: '', password: '' },
         loading: false,
         error: '',
-        okMsg: ''
+        okMsg: '',
+        banInfo: { show: false, reason: '' },
+        appealLoading: false,
+        appealMessage: '',
+        appealMsg: ''
       }
     },
     methods: {
@@ -51,6 +69,8 @@
       async onSubmit() {
         this.error = ''
         this.okMsg = ''
+        this.banInfo = { show: false, reason: '' }
+        this.appealMsg = ''
         const msg = this.validate()
         if (msg) {
           this.error = msg
@@ -72,8 +92,35 @@
           setTimeout(() => this.$router.push('/'), 500)
         } catch (e) {
           this.error = e.message || '登录失败'
+          if (e?.status === 403 && e?.data?.code === 'ACCOUNT_BANNED') {
+            this.banInfo = {
+              show: true,
+              reason: e?.data?.banned_reason || '账号因违反社区规范已被禁用，如有疑问可提交解除禁用申请。'
+            }
+          }
         } finally {
           this.loading = false
+        }
+      },
+      async submitAppeal() {
+        this.appealMsg = ''
+        this.error = ''
+        if (!this.form.account) {
+          this.error = '请先输入用户名或邮箱'
+          return
+        }
+
+        this.appealLoading = true
+        try {
+          const data = await apiFetch('/api/user/ban-appeal', {
+            method: 'POST',
+            body: { account: this.form.account, message: this.appealMessage }
+          })
+          this.appealMsg = data?.message || '申诉已提交，请等待管理员处理'
+        } catch (e) {
+          this.error = e.message || '提交失败'
+        } finally {
+          this.appealLoading = false
         }
       }
     }
@@ -111,8 +158,8 @@
     padding: 10px 14px;
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 14px;
-    background: rgba(0,0,0,0.18);
-    color: rgba(255,255,255,0.92);
+    background: rgba(255, 255, 255, 0.68);
+    color: rgba(141, 64, 132, 0.92);
     font-size: 18px;
     margin-top: 12px;
     margin-bottom: 6px;
@@ -132,7 +179,7 @@
     padding: 10px 16px;
     border: none;
     border-radius: 999px;
-    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    background: linear-gradient(45deg,rgb(240, 184, 236),rgb(255, 199, 236));
     color: #fff;
     font-size: 16px;
     font-weight: 600;
@@ -151,7 +198,7 @@
     font-size: 14px;
     font-weight: 600;
     font-style: italic;
-    color: rgba(255,255,255,0.85);
+    color: rgba(124, 28, 106, 0.85);
     text-decoration: none;
    
     transition: transform 160ms ease, color 160ms ease; /* 平滑过渡 */
@@ -178,5 +225,33 @@
   }
 
   .error{ color: #ff9dbf; margin-top: 8px; }
-  .ok{ color: #b8ffcf; margin-top: 8px; }
+  .ok{ color:rgb(111, 25, 86); margin-top: 8px; }
+  .banCard{
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255, 79, 136, 0.12);
+    border: 1px solid rgba(255, 79, 136, 0.24);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .banTitle{
+    font-weight: 900;
+    color: rgba(116, 31, 84, 0.96);
+  }
+  .banReason{
+    color: rgba(83, 35, 66, 0.9);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .appealInput{
+    min-height: 86px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.24);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 8px 10px;
+    resize: vertical;
+    color: rgba(83, 35, 66, 0.92);
+  }
 </style>

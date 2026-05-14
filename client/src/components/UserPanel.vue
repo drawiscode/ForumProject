@@ -4,7 +4,7 @@
       <img class="avatar-img" :src="avatarSrc" alt="avatar">
     </button>
 
-    <div v-if="open" class="pop card">
+    <div v-if="open" class="pop">
       <template v-if="user">
         <div class="who">
           <div class="name">{{ user.username }}</div>
@@ -157,8 +157,6 @@
     position: relative;
     display: flex;
     align-items: center;
-
-    /* ✅ 让弹层层级高于 nav 本体 */
     z-index: 70;
   }
 
@@ -175,85 +173,97 @@
     border-radius: 999px;
     object-fit: cover;
     display: block;
-    border: 2px solid rgba(255,255,255,0.45);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+
+    border: 2px solid rgba(255,255,255,0.70);
+    box-shadow: 0 14px 28px rgba(255, 79, 136, 0.18);
+    background: #fff;
   }
 
   .pop{
     position: absolute;
     right: 0;
     top: calc(100% + 12px);
-    width: 260px;
-    padding: 12px;
-    border-radius: 18px;
+    width: 270px;
+    padding: 14px;
+    border-radius: 20px;
 
-    /* ✅ 深色毛玻璃 */
-    background: rgba(12, 14, 28, 0.72);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.18);
-    box-shadow: 0 18px 44px rgba(0,0,0,0.55);
+    /* ✅ 白底粉边卡片 */
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(255, 79, 136, 0.30);
+    box-shadow: 0 22px 54px rgba(255, 79, 136, 0.18);
 
-    /* ✅ 关键：弹层要压过页面其它卡片/模糊层 */
     z-index: 9999;
   }
 
   .who{ margin-bottom: 10px; }
-  .name{ font-weight: 900; color: rgba(255,255,255,0.92); }
-  .sub{ font-size: 12px; opacity: .75; color: rgba(255,255,255,0.75); }
+  .name{ font-weight: 950; color: #2e2a33; }
+  .sub{ font-size: 12px; color: rgba(123, 106, 120, 0.95); margin-top: 2px; }
 
-  .upload{ display:block; margin: 8px 0 10px; }
+  .upload{ display:block; margin: 10px 0 12px; }
   .file{ display:none; }
   .upload-btn{
     display: inline-block;
-    padding: 8px 12px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.16);
-    color: rgba(255,255,255,0.90);
+    padding: 9px 12px;
+    border-radius: 14px;
+    background: rgba(255, 107, 158, 0.10);
+    border: 1px solid rgba(255, 79, 136, 0.25);
+    color: rgba(255, 79, 136, 0.95);
     font-size: 14px;
+    font-weight: 850;
     cursor: pointer;
     user-select: none;
+    transition: transform .18s ease, background .18s ease;
   }
   .upload-btn:hover{
-    background: rgba(255,154,158,0.15);
-    border-color: rgba(255,154,158,0.35);
+    background: rgba(255, 107, 158, 0.16);
+    transform: translateY(-1px);
   }
 
   .menu{ display:flex; flex-direction: column; gap: 8px; }
   .row{
     padding: 10px 12px;
     border-radius: 14px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: #fff;
+    border: 1px solid rgba(255, 79, 136, 0.18);
     cursor: pointer;
-    color: rgba(255,255,255,0.88);
+    color: rgba(46, 42, 51, 0.92);
+    font-weight: 800;
+    transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
   }
   .row:hover{
-    background: rgba(255,154,158,0.15);
-    border-color: rgba(255,154,158,0.25);
+    background: rgba(255, 107, 158, 0.10);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(255, 79, 136, 0.12);
   }
 
   .logout,
   .login-btn{
     width: 100%;
-    margin-top: 10px;
+    margin-top: 12px;
     border: 0;
     padding: 10px 12px;
     border-radius: 999px;
     cursor: pointer;
     color: #fff;
-    background: linear-gradient(45deg, rgba(255,154,158,0.95), rgba(250,208,196,0.95));
-    box-shadow: 0 10px 24px rgba(255,154,158,0.18);
-  }
+    font-weight: 950;
+    letter-spacing: .3px;
 
+    background: linear-gradient(135deg, rgba(255, 79, 136, 0.95), rgba(255, 107, 158, 0.95));
+    box-shadow: 0 16px 34px rgba(255, 79, 136, 0.18);
+    transition: transform .18s ease, filter .18s ease;
+  }
   .logout{
-    background: linear-gradient(45deg, rgba(255,120,150,0.9), rgba(255,90,120,0.9));
+    background: linear-gradient(135deg, rgba(255, 79, 136, 0.95), rgba(255, 56, 120, 0.95));
+  }
+  .logout:hover,
+  .login-btn:hover{
+    transform: translateY(-1px);
+    filter: brightness(1.02);
   }
 
   .guests{
-    font-weight: 800;
+    font-weight: 950;
     margin-bottom: 8px;
-    color: rgba(255,255,255,0.92);
+    color: rgba(46, 42, 51, 0.92);
   }
 </style>

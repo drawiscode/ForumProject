@@ -70,7 +70,7 @@
     }
     .link{
         border:0; background:transparent; cursor:pointer; padding:0;
-        color: rgba(255, 196, 214, 0.95);
+        color: rgba(207, 144, 163, 0.95);
         font-weight: 800;
         text-decoration: underline;
         text-underline-offset: 4px;
@@ -80,15 +80,22 @@
         display:flex; align-items:center; gap: 10px;
         padding: 10px 12px;
         border-radius: 14px;
-        background: rgba(0,0,0,0.16);
-        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(238, 178, 205, 0.16);
+        border: 1px solid rgba(144, 126, 126, 0.5);
         cursor: pointer;
     }
     .item:hover{ background: rgba(255,154,158,0.12); }
     .avatar{ width: 42px; height: 42px; border-radius: 999px; object-fit: cover; border: 2px solid rgba(255,255,255,0.30); }
     .avatar.placeholder{ background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.16); }
     .name{ font-weight: 900; }
-    .sub{ font-size: 12px; opacity: .75; }
-    .muted{ opacity: .75; }
+    .name{ 
+        font-weight: 900; 
+        color: rgba(155, 92, 113, 0.95);
+    }
+    .sub{ 
+        font-size: 12px; 
+        opacity: .75; 
+        color: rgba(119, 78, 92, 0.75);
+    }
     .err{ color: #ff7878; }
 </style>

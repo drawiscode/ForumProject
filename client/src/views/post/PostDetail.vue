@@ -17,9 +17,7 @@
                         <div class="post_title">
                             {{post.title}}
                         </div>
-                        <div class="post_content">
-                            {{post.content}}
-                        </div>
+                        <div class="post_content" v-html="safeContent" @click="onContentClick"></div>
                     </div>
                 </div>
 
@@ -30,6 +28,7 @@
                         <div class="post_foot_message_left">
                             <div>{{ post.category }}</div>
                             <div>{{ formatTime(post.created_at) }}</div>
+                            <div v-if="post.last_edited_at">最后编辑：{{ formatTime(post.last_edited_at) }}</div>
                             <div class="stats">
                                 <span>点赞数: {{ post.likes_count }}</span>
                                 <span>评论数: {{ post.replies_count }}</span>
@@ -58,12 +57,24 @@
                 </div>
 
                 <!-- ✅ 给 textarea 加 ref,startReply 会 focus -->
-                <textarea ref="commentInput" class="post-comment" v-model="mycomment" placeholder="请输入评论内容...">
+                <textarea
+                    ref="commentInput"
+                    class="post-comment"
+                    v-model="mycomment"
+                    placeholder="请输入评论内容..."
+                    @paste="onCommentPaste"
+                    @drop.prevent="onCommentDrop"
+                    @dragover.prevent
+                >
                 </textarea>
 
-                <button class="btn" type="button" @click="submitComment" :disabled="submitting">
-                    提交评论
-                </button>
+                <div class="commentActions">
+                    <button class="btn" type="button" @click="triggerCommentUpload">插图</button>
+                    <button class="btn" type="button" @click="submitComment" :disabled="submitting">
+                        提交评论
+                    </button>
+                </div>
+                <input ref="commentFile" class="hiddenInput" type="file" accept="image/*" @change="onCommentFilePick" />
 
                 <div v-if="commentsLoading">加载评论中...</div>
                 <div v-else-if="commentError" class="err">{{ commentError }}</div>
@@ -74,9 +85,7 @@
                             <div class="comment-author">
                                 {{c.author}}
                             </div>
-                            <div class="comment-content">
-                                {{c.content}}
-                            </div>
+                            <div class="comment-content" v-html="formatCommentContent(c.content)" @click="onContentClick"></div>
                             <div class="stats">
                                 <span class="small-info">点赞数 {{ c.likes_count }}</span>
                                 <span class="small-info">回复数 {{ c.reply_count }}</span>
@@ -134,10 +143,15 @@
             </div>
         </section>
     </div>
+
+    <div v-if="previewSrc" class="imgPreview" @click="closePreview">
+        <img :src="previewSrc" alt="preview" />
+    </div>
 </template>
 
 
 <script>
+    import DOMPurify from 'dompurify'
     import { apiFetch } from '../../api/http'
 
     export default { 
@@ -165,13 +179,18 @@
 
                 relatedPosts: [],
                 relatedLoading: false,
-                relatedError: ''
+                relatedError: '',
+                previewSrc: ''
             }
         },
         computed: {
             // 计算属性：返回当前路由的 id(访问时用 this.id,不用 this.id())
             id() {
                 return this.$route.params.id
+            },
+            safeContent() {
+                const raw = this.post?.content || ''
+                return DOMPurify.sanitize(raw)
             }
         },
         mounted() {
@@ -183,11 +202,140 @@
             }
         },
         methods:{
+            onContentClick(e) {
+                const target = e?.target
+                if (target && target.tagName === 'IMG' && target.src) {
+                    this.previewSrc = target.src
+                }
+            },
+            closePreview() {
+                this.previewSrc = ''
+            },
             formatTime(v) {
                 if(!v) return ''
                 const d= new Date(v)
                 if(Number.isNaN(d.getTime())) return String(v)
                 return d.toLocaleString()
+            },
+           formatCommentContent(text) 
+           {
+                const raw = String(text || '')
+                const escaped = raw
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\n/g, '<br/>')
+
+                // 两段替换：先把 Markdown 图片语法替换为占位符，避免后续 linkify 误伤 <img src="...">。
+                const images = []
+                const PLACEHOLDER = '__AF_IMG__'
+
+                let tmp = escaped.replace(
+                    /!\[[^\]]*\]\((https?:\/\/[^\s)]+|\/uploads\/[^\s)]+)\)/g,
+                    (m, url) => {
+                        const idx = images.length
+                        images.push(url)
+                        return `${PLACEHOLDER}${idx}__`
+                    }
+                )
+
+                // 再把“裸链接”变成 <a>（此时不会碰到 img/src 里的 URL）
+                tmp = tmp.replace(/(https?:\/\/[^\s<]+|\/uploads\/[^\s<]+)/g, (m) => {
+                    return `<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`
+                })
+
+                // 最后把占位符还原为 <img>
+                const withImages = tmp.replace(new RegExp(`${PLACEHOLDER}(\\d+)__`, 'g'), (m, n) => {
+                    const url = images[Number(n)]
+                    return url ? `<img src="${url}" alt="image" />` : m
+                })
+
+                return DOMPurify.sanitize(withImages, { ALLOWED_TAGS: ['br', 'img', 'a'], ALLOWED_ATTR: ['href', 'src', 'target', 'rel', 'alt'] })
+            },
+            triggerCommentUpload() {
+                this.$refs.commentFile?.click()
+            },
+            onCommentFilePick(e) {
+                const file = e.target.files?.[0]
+                if (file) this.uploadCommentImage(file)
+                e.target.value = ''
+            },
+            onCommentPaste(e) {
+                const items = Array.from(e.clipboardData?.items || [])
+                const file = items.find((i) => i.kind === 'file' && i.type.startsWith('image/'))?.getAsFile()
+                if (file) {
+                    e.preventDefault()
+                    this.uploadCommentImage(file)
+                }
+            },
+            onCommentDrop(e) {
+                const file = e.dataTransfer?.files?.[0]
+                if (file && file.type?.startsWith('image/')) {
+                    this.uploadCommentImage(file)
+                }
+            },
+            async uploadCommentImage(file) {
+                try {
+                    const compressed = await this.compressImage(file)
+                    const form = new FormData()
+                    form.append('images', compressed)
+                    const data = await apiFetch('/api/upload/images', { method: 'POST', body: form })
+                    const url = data?.urls?.[0]
+                    if (url) {
+                        this.mycomment = `${this.mycomment || ''}![](${url})\n`
+                        this.$nextTick(() => {
+                            const el = this.$refs.commentInput
+                            if (el && el.focus) el.focus()
+                        })
+                    }
+                } catch (e) {
+                    alert(e.message || '图片上传失败')
+                }
+            },
+            async compressImage(file) {
+                const maxSizeMB = 1.2
+                const maxSide = 1600
+                const img = await this.loadImage(file)
+                const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1)
+                const w = Math.round(img.width * ratio)
+                const h = Math.round(img.height * ratio)
+
+                const canvas = document.createElement('canvas')
+                canvas.width = w
+                canvas.height = h
+                const ctx = canvas.getContext('2d')
+                ctx.drawImage(img, 0, 0, w, h)
+
+                let quality = 0.85
+                let blob = await this.canvasToBlob(canvas, quality)
+                while (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.5) {
+                    quality -= 0.1
+                    blob = await this.canvasToBlob(canvas, quality)
+                }
+
+                return new File([blob], file.name.replace(/\.(png|jpg|jpeg|webp|gif)$/i, '.jpg'), {
+                    type: blob.type
+                })
+            },
+            loadImage(file) {
+                return new Promise((resolve, reject) => {
+                    const url = URL.createObjectURL(file)
+                    const img = new Image()
+                    img.onload = () => {
+                        URL.revokeObjectURL(url)
+                        resolve(img)
+                    }
+                    img.onerror = (e) => {
+                        URL.revokeObjectURL(url)
+                        reject(e)
+                    }
+                    img.src = url
+                })
+            },
+            canvasToBlob(canvas, quality) {
+                return new Promise((resolve) => {
+                    canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+                })
             },
             async load(){
                 this.loading=true
@@ -394,7 +542,7 @@
     .personal-info {
         font-size: 18px;
         font-weight: bold;
-        color: #fbc2eb;
+        color: #ff79d9;
         margin-bottom: 20px;
         padding-bottom: 15px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -405,7 +553,7 @@
         margin-bottom: 25px;
         line-height: 1.8;
         font-size: 17px;
-        color: rgba(212, 199, 199, 0.95);
+        color: rgba(59, 27, 55, 0.95);
     }
     .post_title {
         font-size: 22px;
@@ -414,6 +562,71 @@
         background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fbc2eb);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+    }
+    .post_content :deep(p){
+        margin: 8px 0;
+    }
+    .post_content :deep(ul),
+    .post_content :deep(ol){
+        padding-left: 20px;
+        margin: 8px 0;
+    }
+    .post_content :deep(blockquote){
+        margin: 10px 0;
+        padding: 8px 12px;
+        border-left: 3px solid rgba(255, 79, 136, 0.6);
+        background: rgba(255, 107, 158, 0.06);
+        color: rgba(59, 27, 55, 0.9);
+    }
+    .post_content :deep(pre){
+        background: rgba(255, 107, 158, 0.08);
+        padding: 10px 12px;
+        border-radius: 12px;
+        overflow: auto;
+    }
+    .post_content :deep(code){
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 13px;
+    }
+    .post_content :deep(a){
+        color: rgba(255, 79, 136, 0.95);
+        text-decoration: underline;
+    }
+    .post_content :deep(img),
+    .comment-content :deep(img){
+        max-width: 100%;
+        border-radius: 12px;
+        display: block;
+        margin: 8px 0;
+        cursor: zoom-in;
+    }
+    .comment-content :deep(a){
+        color: rgba(255, 79, 136, 0.95);
+        text-decoration: underline;
+    }
+
+    .commentActions{
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .hiddenInput{ display: none; }
+
+    .imgPreview{
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+    }
+    .imgPreview img{
+        max-width: 90vw;
+        max-height: 90vh;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+        cursor: zoom-out;
     }
 
     /* 帖子底部信息 */
@@ -441,16 +654,14 @@
     /* 通用按钮 二次元渐变霓虹 */
     .btn {
         padding: 10px 25px;
-        color: rgba(191, 166, 166, 0.9);
+        color: rgba(100, 49, 93, 0.9);
         font-size: 15px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(103, 98, 98, 0.4);
+        box-shadow: 0 4px 15px rgba(248, 178, 251, 0.4);
         border: 1px solid rgba(220, 191, 191, 0.5);
-        background: rgba(179, 174, 174, 0.12);
-        color: rgba(191, 166, 166, 0.9);
+        background: rgba(239, 239, 239, 0.12);
         border-radius: 25px;
-        cursor: pointer;
     }
     .btn:hover:not(:disabled) {
         transform: translateY(-3px);
@@ -494,11 +705,11 @@
     .post-comment {
         width: 100%;
         min-height: 120px;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(219, 174, 201, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 15px;
         padding: 15px;
-        color: #fff;
+        color: #1b181c;
         font-size: 15px;
         resize: vertical;
         outline: none;
@@ -551,11 +762,11 @@
     }
     .comment-author {
         font-weight: 600;
-        color: #fbc2eb;
+        color: #f575d1;
         margin-bottom: 8px;
     }
     .comment-content {
-        color: rgba(212, 170, 194, 0.95);
+        color: rgba(59, 31, 47, 0.95);
         line-height: 1.7;
         margin-bottom: 10px;
     }
@@ -571,7 +782,7 @@
 
     .small-info {
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(29, 25, 25, 0.6);
     }
 
 
@@ -611,7 +822,7 @@
     }
     .r-meta {
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(99, 78, 78, 0.6);
         display: flex;
         gap: 6px;
     }
@@ -620,7 +831,7 @@
         color: rgba(255, 255, 255, 0.5);
     }
     .err{
-        color: #ff7878
+        color: #f95c5c
     }
     /*响应式适配手机*/
     @media (max-width: 768px) {

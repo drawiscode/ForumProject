@@ -8,6 +8,9 @@ const postRouter = require('./routes/post')
 const commentRouter = require('./routes/comment')
 const boardRouter = require('./routes/board')
 const dmRouter = require('./routes/dm')
+const searchRouter = require('./routes/search')
+const uploadRouter = require('./routes/upload')
+const adminRouter = require('./routes/admin')
 const { pool }  = require('./db')
 
 
@@ -39,6 +42,9 @@ app.use('/api/post', postRouter)
 app.use('/api/comment', commentRouter)
 app.use('/api/board', boardRouter)
 app.use('/api/dm', dmRouter)
+app.use('/api/search', searchRouter)
+app.use('/api/upload', uploadRouter)
+app.use('/api/admin', adminRouter)
 
 // 404 兜底（避免接口找不到时前端拿到一堆默认 HTML）
 app.use((req, res) => {

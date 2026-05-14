@@ -74,59 +74,70 @@
 
 <style scoped>
   .board-view{
-    display: flex;
-    flex-direction: column;
-    margin: 0 0 0 0 ;
-    padding: 20px;
+    width: min(1160px, 96%);
+    margin: 12px auto 0;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 79, 136, 0.22);
+    box-shadow: 0 18px 54px rgba(255, 79, 136, 0.12);
+    border-radius: 26px;
+    min-height: 80vh;
   }
   
-  .post-item {
-    padding: 14px 16px;
-    margin: 10px 0;
-    background: #fff;
-    border-radius: 14px;
-    cursor: pointer;
-  }
-
   .board_title{
     margin: 0 0 20px;
-    font-size: 24px;
-    color: rgba(255, 182, 193, 0.95);
+    font-size: 20px;
+    font-weight: 950;
+    letter-spacing: .2px;
+    background: linear-gradient(135deg, #ff4f88, #ff6b9e, #ff9fc0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
   .title {
     margin: 0 0 8px;
     font-size: 18px;
-    color: rgba(230, 169, 196, 0.9);
+    font-weight: 950;
+    color: rgba(46, 42, 51, 0.92);
   }
 
   .excerpt {
     margin: 0 0 10px;
-    color: rgba(212, 199, 199, 0.95);
+    color: rgba(46, 42, 51, 0.78);
+    line-height: 1.65;
+    font-size: 14px;
   }
 
   .meta {
     display: flex;
     gap: 8px;
     font-size: 12px;
-    color: rgba(221, 195, 223, 0.55);
+    color: rgba(255, 79, 136, 0.70);
+    font-weight: 800;
   }
 
   .err {
-    color: #b00020;
+    color: #ff3b77;
+    font-weight: 800;
   }
   .muted {
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(123, 106, 120, 0.85);
+    font-weight: 700;
   }
 
   .post-item {
     display: flex;
     flex-direction: column;
-    border-radius: 20px;
-    padding: 18px 16px;
-
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border-radius: 22px;
+    padding: 18px;
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid rgba(255, 79, 136, 0.16);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .post-item:hover {
+    background: rgba(255, 107, 158, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 44px rgba(255, 79, 136, 0.14);
   }
 </style>

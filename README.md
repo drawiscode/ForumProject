@@ -1,7 +1,5 @@
 # 二次元论坛项目需求文档
 
-我先结合你 Vue3 + Vite 二次元论坛（含后端、可上线、带动态特效）的核心需求，整理一份规范的项目需求文档，并生成适配 Copilot 的精准指令，既能让 Copilot 先生成完整项目框架，又能后续逐步辅助开发。
-
 ---
 
 ## 一、项目概述
@@ -98,19 +96,6 @@ node-server/
 3. 可扩展性：可直接新增样式、功能，无需大幅修改原有代码  
 4. 可部署性：前端可部署至 Vercel/Netlify，后端可部署至 Render
 
----
-
-## Copilot 精准开发指令（直接复制使用）
-
-### 一、框架生成指令（先搭建完整项目骨架）
-请帮我基于以下需求，从零搭建 Vue3 + Vite 前端 + Node.js + Express 后端的二次元论坛完整项目框架，严格按照需求文档的项目结构生成，只搭建基础文件骨架、配置基础依赖、路由、数据库连接，不写完整业务逻辑，方便后续逐步开发：
-
-1. 前端：生成 Vue3 + Vite 标准结构，配置 Vue Router，创建所有页面/组件文件，配置基础全局二次元样式（全局渐变、字体、动画基础类），引入动态背景基础代码；  
-2. 后端：生成 Node.js + Express 服务结构，配置跨域、数据库连接，创建所有接口路由文件，编写基础接口模板；  
-3. 全程使用原生 JavaScript，不引入多余 UI 库，代码加基础注释，符合课程项目规范；  
-4. 先输出项目搭建步骤、依赖安装命令，再逐一生成所有空框架文件代码。
-
----
 
 ### 二、分步开发辅助指令（后续逐功能开发用）
 
@@ -153,11 +138,11 @@ node-server/
 ```js
 // 请帮我编写论坛【模块名】的 RESTful 接口，实现完整增删改查逻辑，连接数据库，处理请求参数
 ```
-
+sk-f1d3a5f228c445b8a8f9cfb403ddc1ee
 ---
 ## 需求扩展
 
-### A. 基础体验（优先级：高，1-2 天）
+### A. 基础体验
 帖子列表分页/无限滚动
 页面：Home、Board
 接口：GET /api/post?page&size、GET /api/board/:name/posts?page&size
@@ -169,7 +154,7 @@ node-server/
 数据：comment 增加 created_at；前端按时间/热度切换
 
 
-### B. 互动系统（优先级：高，2-4 天）
+### B. 互动系统
 收藏/取消收藏帖子
 页面：PostDetail、我的收藏列表
 表：post_favorites(user_id, post_id, created_at)
@@ -183,7 +168,7 @@ node-server/
 表：notifications(user_id, type, payload, is_read, created_at)
 接口：GET /api/notify、POST /api/notify/:id/read
 
-### C. 内容管理（优先级：中，3-6 天）
+### C. 内容管理
 编辑/删除帖子（作者权限）
 页面：PostDetail 增加“编辑/删除”按钮
 接口：PUT /api/post/:id、DELETE /api/post/:id
@@ -193,7 +178,7 @@ node-server/
 前端：Markdown 编辑器 + 渲染
 安全：后端/前端做 XSS 处理（白名单）
 
-### D. 运营与后台（优先级：中，4-8 天）
+### D. 运营与后台
 举报系统（帖子/评论）
 表：reports(type, target_id, reporter_id, reason, status, created_at)
 后台页：管理员审核、封禁

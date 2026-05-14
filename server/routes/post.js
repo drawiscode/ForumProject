@@ -1,24 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const { pool } = require('../db')
-
-async function requireAuth(req, res, next) {
-  try {
-    const userId = Number(req.header('x-user-id'))
-    if (!userId) return res.status(401).json({ ok: false, message: 'not logged in' })
-
-    const [rows] = await pool.query(
-      'SELECT id, username, role, avatar_url FROM users WHERE id = ? LIMIT 1',
-      [userId]
-    )
-    if (rows.length === 0) return res.status(401).json({ ok: false, message: 'invalid user' })
-
-    req.user = rows[0]
-    next()
-  } catch (err) {
-    res.status(500).json({ ok: false, message: err.message })
-  }
-}
+const { requireAuth } = require('../middleware/auth')
+const { createEmbeddings } = require('../services/embedding')
+const { POINTS, addPoints } = require('../services/points')
 
 
 // ✅ 我的收藏列表（必须在 router.get('/:id') 之前）
@@ -31,7 +16,7 @@ router.get('/favorites', requireAuth, async (req, res) => {
              p.likes_count, p.replies_count, p.views_count, p.favorites_count
       FROM post_favorites f
       JOIN posts p ON p.id = f.post_id
-      WHERE f.user_id = ? AND p.deleted_at IS NULL
+      WHERE f.user_id = ? AND p.deleted_at IS NULL AND p.audit_status = 'approved' AND p.is_hidden = 0
       ORDER BY f.created_at DESC
       LIMIT ?
       `,
@@ -109,6 +94,60 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 })
 
+// GET /api/post/pinned?limit=5
+router.get('/pinned', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 5, 20)
+    const [rows] = await pool.query(
+      `
+      SELECT p.id, p.title, p.category, p.created_at, p.user_id,
+             p.likes_count, p.replies_count, p.views_count, p.favorites_count,
+             p.is_pinned, p.is_featured,
+             u.username AS author
+      FROM posts p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.deleted_at IS NULL
+        AND p.audit_status = 'approved'
+        AND p.is_hidden = 0
+        AND p.is_pinned = 1
+      ORDER BY p.created_at DESC
+      LIMIT ?
+      `,
+      [limit]
+    )
+    res.json({ ok: true, posts: rows, limit })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
+// GET /api/post/featured?limit=5
+router.get('/featured', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 5, 20)
+    const [rows] = await pool.query(
+      `
+      SELECT p.id, p.title, p.category, p.created_at, p.user_id,
+             p.likes_count, p.replies_count, p.views_count, p.favorites_count,
+             p.is_pinned, p.is_featured,
+             u.username AS author
+      FROM posts p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.deleted_at IS NULL
+        AND p.audit_status = 'approved'
+        AND p.is_hidden = 0
+        AND p.is_featured = 1
+      ORDER BY p.created_at DESC
+      LIMIT ?
+      `,
+      [limit]
+    )
+    res.json({ ok: true, posts: rows, limit })
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message })
+  }
+})
+
 
 // GET /api/post/:id/related?limit=6
 router.get('/:id/related', async (req, res) => {
@@ -120,7 +159,7 @@ router.get('/:id/related', async (req, res) => {
 
     // 先拿当前帖子的 category
     const [curRows] = await pool.query(
-      'SELECT id, category FROM posts WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+      "SELECT id, category FROM posts WHERE id = ? AND deleted_at IS NULL AND audit_status = 'approved' AND is_hidden = 0 LIMIT 1",
       [id]
     )
     if (curRows.length === 0) return res.status(404).json({ ok: false, message: 'post not found' })
@@ -134,7 +173,7 @@ router.get('/:id/related', async (req, res) => {
              u.username AS author
       FROM posts p
       JOIN users u ON u.id = p.user_id
-      WHERE p.deleted_at IS NULL
+      WHERE p.deleted_at IS NULL AND p.audit_status = 'approved' AND p.is_hidden = 0
         AND p.category = ?
         AND p.id <> ?
       ORDER BY p.created_at DESC
@@ -157,11 +196,12 @@ router.get('/hot', async (req, res) => {
     const [rows] = await pool.query(
       `
       SELECT p.id, p.title, p.category, p.created_at, p.user_id,
-             p.likes_count, p.replies_count, p.views_count, p.favorites_count,
+            p.likes_count, p.replies_count, p.views_count, p.favorites_count,
+            p.is_pinned, p.is_featured,
              u.username AS author
       FROM posts p
       JOIN users u ON u.id = p.user_id
-      WHERE p.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL AND p.audit_status = 'approved' AND p.is_hidden = 0
       ORDER BY (p.likes_count * 2 + p.replies_count) DESC, p.created_at DESC
       LIMIT ?
       `,
@@ -183,11 +223,12 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT p.id, p.title, p.category, p.created_at, p.user_id,
               p.likes_count, p.replies_count, p.views_count, p.favorites_count,
+              p.is_pinned, p.is_featured,
               u.username AS author
        FROM posts p
        JOIN users u ON u.id = p.user_id
-       WHERE p.deleted_at IS NULL
-       ORDER BY p.created_at DESC
+            WHERE p.deleted_at IS NULL AND p.audit_status = 'approved' AND p.is_hidden = 0
+       ORDER BY p.is_pinned DESC, p.created_at DESC
        LIMIT ? OFFSET ?`,
       [limit, offset]
     )
@@ -205,12 +246,13 @@ router.get('/:id', async (req, res) => {
     if (!id) return res.status(400).json({ ok: false, message: 'invalid id' })
 
     const [rows] = await pool.query(
-      `SELECT p.id, p.title, p.content, p.category, p.created_at, p.user_id,
+      `SELECT p.id, p.title, p.content, p.category, p.created_at, p.last_edited_at, p.user_id,
               p.likes_count, p.replies_count, p.views_count, p.favorites_count,
+              p.is_hidden, p.hidden_reason, p.audit_status,
               u.username AS author
        FROM posts p
        JOIN users u ON u.id = p.user_id
-       WHERE p.id = ? AND p.deleted_at IS NULL
+            WHERE p.id = ? AND p.deleted_at IS NULL AND p.audit_status = 'approved'
        LIMIT 1`,
       [id]
     )
@@ -221,7 +263,11 @@ router.get('/:id', async (req, res) => {
     const post = rows[0]
     post.views_count = (Number(post.views_count) || 0) + 1
 
-    res.json({ ok: true, post: rows[0] })//rows[0]是个对象,包括p.id,p.title等内容
+    if (Number(post.is_hidden) === 1) {
+      post.content = post.hidden_reason ? `该内容已被屏蔽：${post.hidden_reason}` : '该内容已被屏蔽'
+    }
+
+    res.json({ ok: true, post })//rows[0]是个对象,包括p.id,p.title等内容
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message })
   }
@@ -229,26 +275,51 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/post
 router.post('/', requireAuth, async (req, res) => {
-    try{
-      const { title, content, category } = req.body || {}
-      const t = String(title || '').trim()
-      const c = String(content || '').trim()
-      const cat = String(category || '').trim()
+  const conn = await pool.getConnection()
+  try{
+    const { title, content, category } = req.body || {}
+    const t = String(title || '').trim()
+    const c = String(content || '').trim()
+    const cat = String(category || '').trim()
 
-      if(!t || !c || !cat){
-        return res.status(400).json({ ok: false, message: 'title/content/category required' })
-      }
-
-      const [result]  = await pool.query(
-        'INSERT INTO posts (user_id, title, content, category) VALUES (?, ?, ?, ?)',
-        [req.user.id, t, c, cat]
-      )
-
-      res.status(201).json({ ok: true, id: result.insertId })
-
-    }catch(err){
-      res.status(500).json({ ok: false, message: err.message })
+    if(!t || !c || !cat){
+      return res.status(400).json({ ok: false, message: 'title/content/category required' })
     }
+
+    await conn.beginTransaction()
+    const [result]  = await conn.query(
+      'INSERT INTO posts (user_id, title, content, category, last_edited_at) VALUES (?, ?, ?, ?, NOW())',
+      [req.user.id, t, c, cat]
+    )
+
+    const postId = result.insertId
+    await addPoints(conn, req.user.id, POINTS.post)
+    await conn.commit()
+
+    try {
+      const [emb] = await createEmbeddings([`${t}\n${c}`])
+      if (emb && emb.length) {
+        await pool.query(
+          `
+          INSERT INTO post_embeddings (post_id, model, embedding)
+          VALUES (?, ?, ?)
+          ON DUPLICATE KEY UPDATE model = VALUES(model), embedding = VALUES(embedding)
+          `,
+          [postId, process.env.ALIYUN_EMBEDDING_MODEL || 'text-embedding-v3', JSON.stringify(emb)]
+        )
+      }
+    } catch (embedErr) {
+      console.error('create embedding failed', embedErr)
+    }
+
+    res.status(201).json({ ok: true, id: postId })
+
+  }catch(err){
+    try{ await conn.rollback() }catch{}
+    res.status(500).json({ ok: false, message: err.message })
+  } finally {
+    conn.release()
+  }
 
 })
 

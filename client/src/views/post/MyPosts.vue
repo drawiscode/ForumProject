@@ -81,8 +81,8 @@
 
   .danger{
     border: 1px solid rgba(220, 191, 191, 0.5);
-    background: rgba(179, 174, 174, 0.12);
-    color: rgba(191, 166, 166, 0.9);
+    background: rgba(223, 164, 217, 0.12);
+    color: rgba(118, 76, 76, 0.9);
     padding: 6px 10px;
     border-radius: 10px;
     cursor: pointer;
@@ -108,7 +108,7 @@
   }
   .link{
     border:0; background:transparent; cursor:pointer; padding:0;
-    color: rgba(255, 196, 214, 0.95);
+    color: rgba(234, 139, 168, 0.95);
     font-weight: 800;
     text-decoration: underline;
     text-underline-offset: 4px;
@@ -121,13 +121,21 @@
     
     padding: 10px 12px;
     border-radius: 14px;
-    background: rgba(0,0,0,0.16);
+    background: rgba(255, 255, 255, 0.86);
     border: 1px solid rgba(255,255,255,0.10);
     cursor: pointer;
   }
   .item:hover{ background: rgba(255,154,158,0.12); }
-  .p-title{ font-weight: 900; }
-  .sub{ margin-top: 6px; font-size: 12px; opacity: .75; }
+  .p-title{ 
+    font-weight: 900; 
+    color: rgba(155, 92, 113, 0.95);
+  }
+  .sub{ 
+    margin-top: 6px; 
+    font-size: 12px; 
+    opacity: .75;
+    color: rgba(119, 78, 92, 0.75);
+  }
   .muted{ opacity: .75; }
   .err{ color: #ff7878; }
 </style>

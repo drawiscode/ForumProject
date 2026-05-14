@@ -310,8 +310,9 @@
 <style scoped>
   .settings {
     display: flex;
-    width: 100%;
-    gap: 14px;
+    width: min(1160px, 96%);
+    margin: 12px auto 0;
+    gap: 16px;
     position: relative;
     z-index: 1;
   }
@@ -320,21 +321,19 @@
     width: 260px;
     flex: 0 0 260px;
     border-radius: 20px;
-    margin: 0 0 0 100px;
     padding: 14px;
     box-sizing: border-box;
 
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 79, 136, 0.22);
+    box-shadow: 0 18px 54px rgba(255, 79, 136, 0.12);
   }
 
   .title {
     font-weight: 800;
     font-size: 18px;
     margin: 6px 4px 12px;
-    background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+    background: linear-gradient(135deg, #ff4f88, #ff6b9e, #ff9fc0);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -348,41 +347,40 @@
     border-radius: 14px;
     cursor: pointer;
 
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.92);
-  }
-  .item:hover { background: rgba(255, 154, 158, 0.15); }
-  .item.active {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 107, 158, 0.08);
+    border: 1px solid rgba(255, 79, 136, 0.16);
+    color: rgba(46, 42, 51, 0.9);
     font-weight: 800;
+  }
+  .item:hover { background: rgba(255, 107, 158, 0.16); }
+  .item.active {
+    background: rgba(255, 107, 158, 0.22);
+    font-weight: 950;
   }
 
   .right {
     flex: 1;
     border-radius: 20px;
-    margin: 0 100px;
     padding: 14px;
     box-sizing: border-box;
 
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 79, 136, 0.22);
+    box-shadow: 0 18px 54px rgba(255, 79, 136, 0.12);
   }
 
   .card {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+    background: #fff;
+    border: 1px solid rgba(255, 79, 136, 0.18);
+    box-shadow: 0 10px 24px rgba(255, 79, 136, 0.1);
     border-radius: 18px;
-    backdrop-filter: blur(12px);
   }
 
   .panel { padding: 16px; min-height: 360px; }
   h2 {
     margin: 0 0 12px;
-    background: linear-gradient(45deg, #ff9a9e, #fbc2eb);
+    font-weight: 950;
+    background: linear-gradient(135deg, #ff4f88, #ff6b9e, #ff9fc0);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -391,14 +389,14 @@
   .row { display:grid; grid-template-columns: 92px 1fr; gap: 10px; align-items:center; }
   .row.switch { grid-template-columns: 140px 1fr; }
 
-  .label { font-size: 14px; color: rgba(255,255,255,0.85); }
+  .label { font-size: 14px; color: rgba(46, 42, 51, 0.88); font-weight: 800; }
 
   .input,
   .textarea{
     border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(0,0,0,0.18);
-    color: rgba(255,255,255,0.92);
+    border: 1px solid rgba(255, 79, 136, 0.18);
+    background: #fff;
+    color: rgba(46, 42, 51, 0.92);
     outline: none;
   }
   .input { height: 40px; padding: 0 12px; }
@@ -411,12 +409,13 @@
     border-radius: 999px;
     cursor: pointer;
     color: #fff;
-    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
-    box-shadow: 0 4px 15px rgba(255,154,158,0.35);
+    background: linear-gradient(135deg, rgba(255, 79, 136, 0.95), rgba(255, 107, 158, 0.95));
+    box-shadow: 0 10px 20px rgba(255, 79, 136, 0.14);
+    font-weight: 900;
   }
   .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  .muted { color: rgba(255,255,255,0.7); font-size: 13px; }
-  .err { color: #ff7878; }
-  .ok { color: #b8ffcf; font-weight: 700; }
+  .muted { color: rgba(123, 106, 120, 0.85); font-size: 13px; font-weight: 700; }
+  .err { color: #ff3b77; font-weight: 800; }
+  .ok { color: #1bc47d; font-weight: 800; }
 </style>
